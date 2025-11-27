@@ -1,0 +1,17 @@
+{
+    "name": "VoxelRPG.Voxel",
+    "rootNamespace": "VoxelRPG.Voxel",
+    "references": [
+        "VoxelRPG.Core",
+        "VoxelRPG.Utilities"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

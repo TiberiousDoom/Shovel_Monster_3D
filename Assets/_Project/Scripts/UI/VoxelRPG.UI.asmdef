@@ -1,0 +1,18 @@
+{
+    "name": "VoxelRPG.UI",
+    "rootNamespace": "VoxelRPG.UI",
+    "references": [
+        "VoxelRPG.Core",
+        "VoxelRPG.Utilities",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
