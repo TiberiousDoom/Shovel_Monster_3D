@@ -242,6 +242,46 @@ public class SaveFileHeader
 | `GameManager` | Game state (Menu, Playing, Paused) | `Scripts/Core/` |
 | `ServiceLocator` | Inject dependencies, avoid singletons | `Scripts/Core/` |
 | Event channels | `VoidEventChannel`, `BlockChangedEventChannel` | `ScriptableObjects/Events/` |
+| `IContentRegistry<T>` | **Abstract over SO loading strategy** | `Scripts/Core/` |
+| `DirectRegistry<T>` | **Initial implementation (direct refs)** | `Scripts/Core/` |
+
+**Content Registry (implement now, swap later):**
+
+```csharp
+// IContentRegistry.cs - Define the abstraction upfront
+public interface IContentRegistry<T> where T : ScriptableObject
+{
+    T Get(string id);
+    IEnumerable<T> GetAll();
+    bool TryGet(string id, out T item);
+}
+
+// DirectRegistry.cs - Phase 0A implementation (simple, direct references)
+public class DirectRegistry<T> : IContentRegistry<T> where T : ScriptableObject
+{
+    [SerializeField] private T[] _items;
+    private Dictionary<string, T> _lookup;
+
+    public void Initialize()
+    {
+        _lookup = _items.ToDictionary(GetId, item => item);
+    }
+
+    public T Get(string id) => _lookup[id];
+    public IEnumerable<T> GetAll() => _items;
+    public bool TryGet(string id, out T item) => _lookup.TryGetValue(id, out item);
+
+    protected virtual string GetId(T item) => item.name; // Override per type
+}
+
+// Usage in Phase 0A - all registries use this pattern
+public class BlockRegistry : DirectRegistry<BlockType>
+{
+    protected override string GetId(BlockType block) => block.Id;
+}
+```
+
+**Why implement now:** Defining `IContentRegistry<T>` and using `DirectRegistry<T>` from the start means all call sites use the interface. When/if you need to swap to `AddressableRegistry<T>` in Phase 5+, you change the implementation, not every caller. The interface is trivial; the value is in consistent usage.
 
 ### Exit Criteria (Phase 0A)
 
@@ -526,6 +566,26 @@ public class Phase1SaveData
 - [ ] External playtester can survive 3 in-game days without major bugs
 - [ ] Performance meets targets
 - [ ] Visual style approved for full production
+
+### Fail Criteria (Return to Phase 1)
+
+These issues warrant going back rather than pushing forward:
+
+| Issue | Symptom | Why It's a Blocker |
+|-------|---------|-------------------|
+| **Fundamental voxel bugs** | Chunks disappear, blocks desync, corruption on save/load | NPC pathfinding and construction will amplify these 10x |
+| **Performance floor breach** | <30 FPS on target hardware with small world | Adding NPCs, tasks, and combat will only make it worse |
+| **Player controller feel wrong** | Testers consistently describe movement as "floaty," "frustrating," or "unresponsive" | Core feel is hard to fix later; better to nail it now |
+| **Survival loop not engaging** | Testers quit before night 2, describe game as "boring" or "pointless" | NPCs won't fix a broken core loop—they'll just be managing boredom |
+| **Save system unreliable** | Data loss on >5% of save/load cycles | Phase 2+ saves are 10x more complex; fix it now |
+| **Critical integration failure** | Systems fight each other (e.g., inventory and crafting have incompatible assumptions) | Architectural issues compound; rework is cheaper now |
+
+**Decision Framework:**
+1. If 1 blocker: Fix before proceeding
+2. If 2+ blockers: Formal Phase 1 rework sprint
+3. If core loop isn't fun: Stop and reassess design, not just code
+
+The goal is to avoid sunk cost reasoning. It's cheaper to spend 2 extra weeks in Phase 1 than to build Phase 2-4 on a broken foundation.
 
 ---
 
@@ -1260,14 +1320,27 @@ Replace stub from Phase 1:
 
 ### 7.3 Accessibility
 
-| Task | Description |
-|------|-------------|
-| Remappable controls | Full rebinding support |
-| Colorblind modes | Deuteranopia, Protanopia, Tritanopia |
-| Text scaling | UI scale options |
-| Screen reader support | UI element labels |
-| Subtitle options | Size, background, speaker labels |
-| Reduce motion option | Disable screen shake, reduce particles |
+| Task | Description | Commitment |
+|------|-------------|------------|
+| Remappable controls | Full rebinding support | **Committed** |
+| Colorblind modes | Deuteranopia, Protanopia, Tritanopia filters | **Committed** |
+| Text scaling | UI scale options (75%-150%) | **Committed** |
+| Subtitle options | Size, background, speaker labels | **Committed** |
+| Reduce motion option | Disable screen shake, reduce particles | **Committed** |
+| Screen reader (menus/UI) | Labels for menu navigation, inventory, dialogue | **Committed** |
+| Screen reader (3D world) | Audio cues for nearby objects, navigation | **Investigate** |
+
+**Screen Reader Scope:**
+
+The menu/UI screen reader support is achievable—Unity UI elements can expose accessibility labels, and navigation is discrete (buttons, lists, grids).
+
+However, **screen reader support for 3D voxel gameplay is genuinely hard** and may not be feasible:
+- Spatial audio for "what's around me" is complex
+- Voxel grids have thousands of elements
+- Building/mining require precise 3D targeting
+- No established patterns in the genre
+
+**Recommendation:** Commit to menu/UI accessibility. For 3D gameplay, research what similar games have done (if anything), consult with accessibility experts, and decide post-Phase 5 whether to commit, scope down, or acknowledge as a limitation.
 
 ### 7.4 Platform Builds
 
@@ -1344,6 +1417,54 @@ public class SaveMigrator
 }
 ```
 
+### Backward Compatibility Policy
+
+**Problem:** What happens when a player loads a newer save in an older game version (e.g., after rolling back an update)?
+
+**Policy:** Refuse to load with clear messaging.
+
+```csharp
+// SaveLoader.cs
+public class SaveLoader
+{
+    private const int CURRENT_VERSION = 4;
+
+    public LoadResult TryLoad(string path)
+    {
+        var header = ReadHeader(path);
+
+        // Forward compatibility: older save, newer game = OK (migrate)
+        if (header.Version < CURRENT_VERSION)
+        {
+            return LoadAndMigrate(path);
+        }
+
+        // Exact match = OK
+        if (header.Version == CURRENT_VERSION)
+        {
+            return LoadDirect(path);
+        }
+
+        // Backward compatibility: newer save, older game = REFUSE
+        if (header.Version > CURRENT_VERSION)
+        {
+            return LoadResult.Failed(
+                $"This save was created with a newer version of the game (save v{header.Version}, game v{CURRENT_VERSION}). " +
+                $"Please update the game to load this save."
+            );
+        }
+    }
+}
+```
+
+**Rationale:**
+- **Partial loading is dangerous:** Missing data can cause subtle bugs, corrupt the save further, or create inconsistent game state
+- **Data loss warnings don't work:** Players click through warnings and then complain about lost progress
+- **Rollbacks are rare:** Most players update forward; the few who rollback can update again
+- **Clear messaging prevents support tickets:** "Update the game" is actionable
+
+**Exception:** During Early Access, consider a "load anyway (DANGEROUS)" developer flag for debugging player-reported issues with specific saves.
+
 ### Save System Testing Per Phase
 
 Each phase must include:
@@ -1405,17 +1526,21 @@ Check these items at the end of each phase to avoid painful rewrites.
 
 ## ScriptableObject Scaling Strategy
 
-### Current Approach (< 100 items per type)
+### Foundation (Implemented in Phase 0A)
 
-Direct references work fine:
+`IContentRegistry<T>` and `DirectRegistry<T>` are implemented from Phase 0A (see [0A.5 Core Framework](#0a5-core-framework)). This means all code uses the interface from day one—no refactoring call sites later.
 
 ```csharp
-public class BlockRegistry : MonoBehaviour
-{
-    [SerializeField] private BlockType[] _allBlocks;
-    private Dictionary<string, BlockType> _blockLookup;
-}
+// All registries inherit from DirectRegistry<T>
+public class BlockRegistry : DirectRegistry<BlockType> { }
+public class ItemRegistry : DirectRegistry<ItemDefinition> { }
+public class RecipeRegistry : DirectRegistry<Recipe> { }
+// etc.
 ```
+
+### Current Approach (< 100 items per type)
+
+`DirectRegistry<T>` works fine—simple array + dictionary lookup. No async, no complexity.
 
 ### Scaling Concerns (100+ items)
 
@@ -1428,28 +1553,44 @@ public class BlockRegistry : MonoBehaviour
 
 ### Migration Path (Phase 5+ if needed)
 
+Since all call sites use `IContentRegistry<T>`, migration is straightforward:
+
 ```csharp
-// IContentRegistry.cs - Abstract over loading strategy
-public interface IContentRegistry<T> where T : ScriptableObject
+// AddressableRegistry.cs - Swap in when needed
+public class AddressableRegistry<T> : IContentRegistry<T> where T : ScriptableObject
 {
-    T Get(string id);
-    IEnumerable<T> GetAll();
-    Task<T> GetAsync(string id);
-    void Preload(IEnumerable<string> ids);
+    private readonly string _label;
+    private Dictionary<string, T> _loaded = new();
+
+    public T Get(string id)
+    {
+        if (!_loaded.TryGetValue(id, out var item))
+        {
+            // Sync load for immediate need (use sparingly)
+            item = Addressables.LoadAssetAsync<T>(id).WaitForCompletion();
+            _loaded[id] = item;
+        }
+        return item;
+    }
+
+    public async Task<T> GetAsync(string id)
+    {
+        if (!_loaded.TryGetValue(id, out var item))
+        {
+            item = await Addressables.LoadAssetAsync<T>(id);
+            _loaded[id] = item;
+        }
+        return item;
+    }
+
+    public void Preload(IEnumerable<string> ids)
+    {
+        // Batch load for level start, etc.
+    }
 }
 
-// DirectRegistry.cs - Current approach
-public class DirectRegistry<T> : IContentRegistry<T>
-{
-    [SerializeField] private T[] _items;
-    // Direct lookup
-}
-
-// AddressableRegistry.cs - Scaled approach
-public class AddressableRegistry<T> : IContentRegistry<T>
-{
-    // Addressables-based loading
-}
+// Swap implementation via ServiceLocator or DI
+services.Register<IContentRegistry<BlockType>>(new AddressableRegistry<BlockType>("blocks"));
 ```
 
 ### When to Migrate
@@ -1552,7 +1693,8 @@ Phase 7: Launch (2-3 months)
 ---
 
 **Document Created:** November 2025
-**Version:** 2.0
+**Version:** 2.1
 **Changelog:**
+- v2.1: Added vertical slice fail criteria, save backward compatibility policy, moved IContentRegistry to Phase 0A, scoped screen reader accessibility
 - v2.0: Split Phase 0, added integration checkpoints, task recovery, MP compatibility, accessibility
 - v1.0: Initial development plan
