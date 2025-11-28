@@ -32,11 +32,17 @@ namespace VoxelRPG.Bootstrap
         [SerializeField] private BlockType _groundBlock;
 
         [Header("Player Settings")]
+        [Tooltip("X and Z position for spawn. Y is calculated from terrain if Auto Spawn Height is enabled.")]
         [SerializeField] private Vector3 _playerSpawnPosition = new Vector3(32f, 50f, 32f);
+
+        [Tooltip("Automatically place player on top of terrain at spawn X,Z position")]
+        [SerializeField] private bool _autoSpawnHeight = true;
 
         [Header("Prefabs (Optional)")]
         [SerializeField] private GameObject _playerPrefab;
         [SerializeField] private GameObject _gameManagerPrefab;
+
+        private WorldGenerator _worldGenerator;
 
         private void Start()
         {
@@ -119,19 +125,19 @@ namespace VoxelRPG.Bootstrap
 
             // Create WorldGenerator
             var generatorObject = new GameObject("WorldGenerator");
-            var worldGenerator = generatorObject.AddComponent<WorldGenerator>();
+            _worldGenerator = generatorObject.AddComponent<WorldGenerator>();
 
             // Configure the generator
-            worldGenerator.SetDefaultBiome(_defaultBiome);
+            _worldGenerator.SetDefaultBiome(_defaultBiome);
             if (_worldSeed != 0)
             {
-                worldGenerator.SetSeed(_worldSeed);
+                _worldGenerator.SetSeed(_worldSeed);
             }
 
             // Initialize and generate
-            world.SetWorldGenerator(worldGenerator);
-            worldGenerator.SetWorld(world);
-            worldGenerator.GenerateWorld();
+            world.SetWorldGenerator(_worldGenerator);
+            _worldGenerator.SetWorld(world);
+            _worldGenerator.GenerateWorld();
 
             Debug.Log("[GameBootstrap] Generated procedural terrain.");
         }
@@ -157,22 +163,54 @@ namespace VoxelRPG.Bootstrap
                 return;
             }
 
+            // Calculate spawn position
+            var spawnPos = CalculateSpawnPosition();
+
             if (_playerPrefab != null)
             {
-                var player = Instantiate(_playerPrefab, _playerSpawnPosition, Quaternion.identity);
+                var player = Instantiate(_playerPrefab, spawnPos, Quaternion.identity);
                 player.name = "Player";
             }
             else
             {
-                CreateDefaultPlayer();
+                CreateDefaultPlayer(spawnPos);
             }
         }
 
-        private void CreateDefaultPlayer()
+        private Vector3 CalculateSpawnPosition()
+        {
+            var spawnPos = _playerSpawnPosition;
+
+            if (_autoSpawnHeight)
+            {
+                int spawnX = Mathf.RoundToInt(_playerSpawnPosition.x);
+                int spawnZ = Mathf.RoundToInt(_playerSpawnPosition.z);
+
+                // Get terrain height from world generator or use flat terrain height
+                int terrainHeight;
+                if (_useWorldGenerator && _worldGenerator != null)
+                {
+                    terrainHeight = _worldGenerator.GetSurfaceHeight(spawnX, spawnZ);
+                }
+                else
+                {
+                    terrainHeight = _groundHeight;
+                }
+
+                // Spawn player 2 blocks above terrain surface
+                spawnPos.y = terrainHeight + 2f;
+
+                Debug.Log($"[GameBootstrap] Auto spawn height: terrain={terrainHeight}, spawn Y={spawnPos.y}");
+            }
+
+            return spawnPos;
+        }
+
+        private void CreateDefaultPlayer(Vector3 spawnPosition)
         {
             // Create player root
             var playerObject = new GameObject("Player");
-            playerObject.transform.position = _playerSpawnPosition;
+            playerObject.transform.position = spawnPosition;
             playerObject.layer = LayerMask.NameToLayer("Default");
 
             // Add CharacterController
