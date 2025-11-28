@@ -1,8 +1,10 @@
 using UnityEngine;
+using VoxelRPG.Core;
+using VoxelRPG.Player;
 using VoxelRPG.Voxel;
 using VoxelRPG.Voxel.Generation;
 
-namespace VoxelRPG.Core.Bootstrap
+namespace VoxelRPG.Bootstrap
 {
     /// <summary>
     /// Bootstraps a minimal game scene for testing.
@@ -143,7 +145,7 @@ namespace VoxelRPG.Core.Bootstrap
         private void SetupPlayer()
         {
             // Check if player already exists
-            if (FindFirstObjectByType<Player.PlayerController>() != null)
+            if (FindFirstObjectByType<PlayerController>() != null)
             {
                 return;
             }
@@ -173,7 +175,7 @@ namespace VoxelRPG.Core.Bootstrap
             characterController.center = new Vector3(0, 0.9f, 0);
 
             // Add PlayerController
-            playerObject.AddComponent<Player.PlayerController>();
+            playerObject.AddComponent<PlayerController>();
 
             // Create camera holder
             var cameraHolder = new GameObject("CameraHolder");
@@ -195,12 +197,12 @@ namespace VoxelRPG.Core.Bootstrap
             cameraObject.AddComponent<AudioListener>();
 
             // Add PlayerCamera component
-            var playerCamera = cameraObject.AddComponent<Player.PlayerCamera>();
+            var playerCamera = cameraObject.AddComponent<PlayerCamera>();
             // Set player body reference via serialized field would require reflection
             // For now, the PlayerCamera will need manual setup in inspector
 
             // Add BlockInteraction
-            var blockInteraction = playerObject.AddComponent<Player.BlockInteraction>();
+            var blockInteraction = playerObject.AddComponent<BlockInteraction>();
 
             // Create ground check point
             var groundCheck = new GameObject("GroundCheck");
