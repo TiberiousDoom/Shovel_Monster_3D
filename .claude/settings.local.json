@@ -3,7 +3,9 @@
     "allow": [
       "Bash(mkdir:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Implement Phase 1.1 world generation system\n\nAdd procedural terrain generation with biome support:\n- BiomeDefinition ScriptableObject for configuring biomes\n- IWorldGenerator interface for generation strategies  \n- WorldGenerator with noise-based terrain and vegetation\n- BiomeManager for multi-biome support\n- VegetationGenerator for tree generation\n\nUpdate VoxelWorld with UseWorldGenerator option and integration.\nUpdate GameBootstrap to support procedural generation mode.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Implement Phase 1.1 world generation system\n\nAdd procedural terrain generation with biome support:\n- BiomeDefinition ScriptableObject for configuring biomes\n- IWorldGenerator interface for generation strategies  \n- WorldGenerator with noise-based terrain and vegetation\n- BiomeManager for multi-biome support\n- VegetationGenerator for tree generation\n\nUpdate VoxelWorld with UseWorldGenerator option and integration.\nUpdate GameBootstrap to support procedural generation mode.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

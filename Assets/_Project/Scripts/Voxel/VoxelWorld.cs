@@ -321,5 +321,46 @@ namespace VoxelRPG.Voxel
         {
             return _chunks.Values;
         }
+
+        /// <summary>
+        /// Unloads a chunk at the specified position.
+        /// </summary>
+        /// <param name="chunkPosition">Position in chunk coordinates.</param>
+        public void UnloadChunk(Vector3Int chunkPosition)
+        {
+            if (_chunks.TryGetValue(chunkPosition, out var chunk))
+            {
+                chunk.OnBlockChanged -= HandleChunkBlockChanged;
+                _chunks.Remove(chunkPosition);
+                Destroy(chunk.gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Loads or creates a chunk at the specified position.
+        /// </summary>
+        /// <param name="chunkPosition">Position in chunk coordinates.</param>
+        /// <returns>The loaded or created chunk.</returns>
+        public VoxelChunk LoadOrCreateChunk(Vector3Int chunkPosition)
+        {
+            if (_chunks.TryGetValue(chunkPosition, out var existingChunk))
+            {
+                return existingChunk;
+            }
+
+            return CreateChunk(chunkPosition);
+        }
+
+        /// <summary>
+        /// Rebuilds the mesh for a specific chunk.
+        /// </summary>
+        /// <param name="chunk">The chunk to rebuild.</param>
+        public void RebuildChunkMesh(VoxelChunk chunk)
+        {
+            if (chunk != null)
+            {
+                chunk.RebuildMesh(_meshBuilder);
+            }
+        }
     }
 }

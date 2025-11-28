@@ -268,5 +268,30 @@ namespace VoxelRPG.Voxel
             _blocks = blocks;
             _isDirty = true;
         }
+
+        /// <summary>
+        /// Resets the chunk state for pooling/reuse.
+        /// Clears all blocks and marks as dirty.
+        /// </summary>
+        public void Reset()
+        {
+            // Clear all blocks to air
+            var air = BlockType.Air;
+            for (int x = 0; x < SIZE; x++)
+            {
+                for (int y = 0; y < SIZE; y++)
+                {
+                    for (int z = 0; z < SIZE; z++)
+                    {
+                        _blocks[x, y, z] = air;
+                    }
+                }
+            }
+
+            ChunkPosition = Vector3Int.zero;
+            World = null;
+            _isDirty = true;
+            _isInitialized = false;
+        }
     }
 }
