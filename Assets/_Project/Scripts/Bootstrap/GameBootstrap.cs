@@ -32,7 +32,7 @@ namespace VoxelRPG.Bootstrap
         [SerializeField] private BlockType _groundBlock;
 
         [Header("Player Settings")]
-        [SerializeField] private Vector3 _playerSpawnPosition = new Vector3(32f, 10f, 32f);
+        [SerializeField] private Vector3 _playerSpawnPosition = new Vector3(32f, 50f, 32f);
 
         [Header("Prefabs (Optional)")]
         [SerializeField] private GameObject _playerPrefab;
@@ -42,10 +42,8 @@ namespace VoxelRPG.Bootstrap
         {
             SetupGameManager();
             SetupWorld();
-            SetupPlayer();
             SetupLighting();
-
-            Debug.Log("[GameBootstrap] Scene setup complete.");
+            // Player setup is done after terrain generation in the coroutine
         }
 
         private void SetupGameManager()
@@ -104,6 +102,11 @@ namespace VoxelRPG.Bootstrap
             {
                 GenerateFlatTerrain(world);
             }
+
+            // Setup player after terrain is generated
+            SetupPlayer();
+
+            Debug.Log("[GameBootstrap] Scene setup complete.");
         }
 
         private void GenerateProceduralTerrain(VoxelWorld world)
@@ -202,8 +205,7 @@ namespace VoxelRPG.Bootstrap
 
             // Add PlayerCamera component
             var playerCamera = cameraObject.AddComponent<PlayerCamera>();
-            // Set player body reference via serialized field would require reflection
-            // For now, the PlayerCamera will need manual setup in inspector
+            playerCamera.SetPlayerBody(playerObject.transform);
 
             // Add BlockInteraction
             var blockInteraction = playerObject.AddComponent<BlockInteraction>();

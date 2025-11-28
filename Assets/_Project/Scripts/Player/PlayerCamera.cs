@@ -132,5 +132,14 @@ namespace VoxelRPG.Player
             _verticalRotation = Mathf.Clamp(angle, _minVerticalAngle, _maxVerticalAngle);
             transform.localRotation = Quaternion.Euler(_verticalRotation, 0f, 0f);
         }
+
+        /// <summary>
+        /// Sets the player body transform for horizontal rotation.
+        /// </summary>
+        /// <param name="playerBody">The player body transform.</param>
+        public void SetPlayerBody(Transform playerBody)
+        {
+            _playerBody = playerBody;
+        }
     }
 }
