@@ -102,6 +102,25 @@ namespace VoxelRPG.Voxel
         }
 
         /// <summary>
+        /// Sets the material used for chunk rendering.
+        /// </summary>
+        /// <param name="material">The material to apply to all chunks.</param>
+        public void SetChunkMaterial(Material material)
+        {
+            _chunkMaterial = material;
+
+            // Apply to existing chunks
+            foreach (var chunk in _chunks.Values)
+            {
+                var renderer = chunk.GetComponent<MeshRenderer>();
+                if (renderer != null)
+                {
+                    renderer.material = material;
+                }
+            }
+        }
+
+        /// <summary>
         /// Generates terrain using the assigned world generator.
         /// </summary>
         public void GenerateWithWorldGenerator()

@@ -90,6 +90,12 @@ namespace VoxelRPG.Bootstrap
             // Wait one frame for world initialization
             yield return null;
 
+            // Apply material to chunks
+            if (_chunkMaterial != null)
+            {
+                world.SetChunkMaterial(_chunkMaterial);
+            }
+
             if (_useWorldGenerator)
             {
                 GenerateProceduralTerrain(world);

@@ -40,13 +40,11 @@ namespace VoxelRPG.Voxel.Generation
         /// <inheritdoc/>
         public int Seed => _seed;
 
-        private void Awake()
-        {
-            Initialize();
-        }
+        private bool _isInitialized;
 
         /// <summary>
         /// Initializes the generator with the configured seed.
+        /// Called automatically before generation if not already initialized.
         /// </summary>
         public void Initialize()
         {
@@ -60,8 +58,17 @@ namespace VoxelRPG.Voxel.Generation
             _seedOffsetZ = (float)(_random.NextDouble() * 10000);
 
             _vegetationGenerator = new VegetationGenerator(_seed);
+            _isInitialized = true;
 
             Debug.Log($"[WorldGenerator] Initialized with seed: {_seed}");
+        }
+
+        private void EnsureInitialized()
+        {
+            if (!_isInitialized)
+            {
+                Initialize();
+            }
         }
 
         /// <summary>
@@ -284,6 +291,14 @@ namespace VoxelRPG.Voxel.Generation
                 Debug.LogError("[WorldGenerator] No VoxelWorld assigned. Call SetWorld() first.");
                 return;
             }
+
+            if (_defaultBiome == null && _biomeManager == null)
+            {
+                Debug.LogError("[WorldGenerator] No biome assigned. Call SetDefaultBiome() first.");
+                return;
+            }
+
+            EnsureInitialized();
 
             Debug.Log("[WorldGenerator] Starting world generation...");
 
