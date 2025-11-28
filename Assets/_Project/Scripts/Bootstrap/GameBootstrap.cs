@@ -14,8 +14,6 @@ namespace VoxelRPG.Bootstrap
     public class GameBootstrap : MonoBehaviour
     {
         [Header("World Settings")]
-        [SerializeField] private int _worldSizeInChunks = 4;
-        [SerializeField] private int _worldHeightInChunks = 2;
         [SerializeField] private Material _chunkMaterial;
 
         [Header("Generation Mode")]
