@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using VoxelRPG.Core;
 using VoxelRPG.Player;
 using VoxelRPG.Voxel;
@@ -41,6 +42,10 @@ namespace VoxelRPG.Bootstrap
         [Header("Prefabs (Optional)")]
         [SerializeField] private GameObject _playerPrefab;
         [SerializeField] private GameObject _gameManagerPrefab;
+
+        [Header("Input")]
+        [Tooltip("Input Actions asset for player controls")]
+        [SerializeField] private InputActionAsset _inputActions;
 
         private WorldGenerator _worldGenerator;
 
@@ -246,12 +251,48 @@ namespace VoxelRPG.Bootstrap
             playerCamera.SetPlayerBody(playerObject.transform);
 
             // Add BlockInteraction
-            var blockInteraction = playerObject.AddComponent<BlockInteraction>();
+            playerObject.AddComponent<BlockInteraction>();
 
             // Create ground check point
             var groundCheck = new GameObject("GroundCheck");
             groundCheck.transform.SetParent(playerObject.transform);
             groundCheck.transform.localPosition = new Vector3(0, 0, 0);
+
+            // Add PlayerInput for input handling
+            if (_inputActions != null)
+            {
+                var playerInput = playerObject.AddComponent<PlayerInput>();
+                playerInput.actions = _inputActions;
+                playerInput.defaultActionMap = "Player";
+                playerInput.notificationBehavior = PlayerNotifications.InvokeCSharpEvents;
+
+                // Get the player controller to wire up input events
+                var controller = playerObject.GetComponent<PlayerController>();
+
+                // Subscribe to input events
+                playerInput.onActionTriggered += context =>
+                {
+                    switch (context.action.name)
+                    {
+                        case "Move":
+                            controller.OnMove(context);
+                            break;
+                        case "Look":
+                            playerCamera.OnLook(context);
+                            break;
+                        case "Jump":
+                            controller.OnJump(context);
+                            break;
+                        case "Sprint":
+                            controller.OnSprint(context);
+                            break;
+                    }
+                };
+            }
+            else
+            {
+                Debug.LogWarning("[GameBootstrap] No Input Actions assigned. Player will not respond to input.");
+            }
 
             Debug.Log("[GameBootstrap] Created default player.");
         }
