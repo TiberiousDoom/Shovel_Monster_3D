@@ -1,5 +1,6 @@
 using UnityEngine;
 using VoxelRPG.Voxel;
+using VoxelRPG.Voxel.Generation;
 
 namespace VoxelRPG.Core.Bootstrap
 {
@@ -15,7 +16,18 @@ namespace VoxelRPG.Core.Bootstrap
         [SerializeField] private int _worldHeightInChunks = 2;
         [SerializeField] private Material _chunkMaterial;
 
-        [Header("Terrain Generation")]
+        [Header("Generation Mode")]
+        [Tooltip("Use procedural world generation instead of flat terrain")]
+        [SerializeField] private bool _useWorldGenerator;
+
+        [Header("World Generator Settings")]
+        [Tooltip("Seed for world generation (0 = random)")]
+        [SerializeField] private int _worldSeed;
+
+        [Tooltip("Default biome for generation")]
+        [SerializeField] private BiomeDefinition _defaultBiome;
+
+        [Header("Flat Terrain (Legacy)")]
         [SerializeField] private int _groundHeight = 4;
         [SerializeField] private BlockType _groundBlock;
 
@@ -78,6 +90,45 @@ namespace VoxelRPG.Core.Bootstrap
             // Wait one frame for world initialization
             yield return null;
 
+            if (_useWorldGenerator)
+            {
+                GenerateProceduralTerrain(world);
+            }
+            else
+            {
+                GenerateFlatTerrain(world);
+            }
+        }
+
+        private void GenerateProceduralTerrain(VoxelWorld world)
+        {
+            if (_defaultBiome == null)
+            {
+                Debug.LogWarning("[GameBootstrap] No default biome assigned. Cannot generate procedural terrain.");
+                return;
+            }
+
+            // Create WorldGenerator
+            var generatorObject = new GameObject("WorldGenerator");
+            var worldGenerator = generatorObject.AddComponent<WorldGenerator>();
+
+            // Configure the generator
+            worldGenerator.SetDefaultBiome(_defaultBiome);
+            if (_worldSeed != 0)
+            {
+                worldGenerator.SetSeed(_worldSeed);
+            }
+
+            // Initialize and generate
+            world.SetWorldGenerator(worldGenerator);
+            worldGenerator.SetWorld(world);
+            worldGenerator.GenerateWorld();
+
+            Debug.Log("[GameBootstrap] Generated procedural terrain.");
+        }
+
+        private void GenerateFlatTerrain(VoxelWorld world)
+        {
             if (_groundBlock != null)
             {
                 world.GenerateFlatTerrain(_groundHeight, _groundBlock);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using VoxelRPG.Core;
+using VoxelRPG.Voxel.Generation;
 
 namespace VoxelRPG.Voxel
 {
@@ -16,11 +17,16 @@ namespace VoxelRPG.Voxel
         [SerializeField] private int _worldSizeInChunks = 4;
         [SerializeField] private int _worldHeightInChunks = 2;
 
+        [Header("Generation")]
+        [Tooltip("Enable procedural world generation using WorldGenerator")]
+        [SerializeField] private bool _useWorldGenerator;
+
         [Header("References")]
         [SerializeField] private Material _chunkMaterial;
 
         private Dictionary<Vector3Int, VoxelChunk> _chunks;
         private IChunkMeshBuilder _meshBuilder;
+        private IWorldGenerator _worldGenerator;
         private bool _isInitialized;
 
         /// <summary>
@@ -42,6 +48,11 @@ namespace VoxelRPG.Voxel
         /// World height in blocks for Y dimension.
         /// </summary>
         public int WorldHeightInBlocks => _worldHeightInChunks * VoxelChunk.SIZE;
+
+        /// <summary>
+        /// Whether the world uses procedural generation.
+        /// </summary>
+        public bool UseWorldGenerator => _useWorldGenerator;
 
         /// <inheritdoc/>
         public event Action<Vector3Int, BlockType, BlockType> OnBlockChanged;
@@ -79,6 +90,37 @@ namespace VoxelRPG.Voxel
 
             CreateChunks();
             _isInitialized = true;
+        }
+
+        /// <summary>
+        /// Sets the world generator for procedural terrain.
+        /// </summary>
+        /// <param name="generator">The world generator to use.</param>
+        public void SetWorldGenerator(IWorldGenerator generator)
+        {
+            _worldGenerator = generator;
+        }
+
+        /// <summary>
+        /// Generates terrain using the assigned world generator.
+        /// </summary>
+        public void GenerateWithWorldGenerator()
+        {
+            if (_worldGenerator == null)
+            {
+                Debug.LogWarning("[VoxelWorld] No world generator assigned.");
+                return;
+            }
+
+            Debug.Log("[VoxelWorld] Generating terrain with world generator...");
+
+            foreach (var chunk in _chunks.Values)
+            {
+                _worldGenerator.GenerateChunk(chunk);
+            }
+
+            RebuildAllChunks();
+            Debug.Log("[VoxelWorld] Terrain generation complete.");
         }
 
         private void CreateChunks()
