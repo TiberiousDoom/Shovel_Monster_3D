@@ -286,6 +286,9 @@ namespace VoxelRPG.Bootstrap
                         case "Sprint":
                             controller.OnSprint(context);
                             break;
+                        case "Crouch":
+                            controller.OnCrouch(context);
+                            break;
                     }
                 };
 
