@@ -19,8 +19,8 @@ MonoBehaviour:
   _stoneBlock: {fileID: 11400000, guid: 095a1045827e4e64ba012e359a1995a7, type: 2}
   _waterBlock: {fileID: 11400000, guid: 134a421a8934d1d4f883640768937adb, type: 2}
   _beachBlock: {fileID: 11400000, guid: 12846b4e55166a64b9e9b9f4b4cd6157, type: 2}
-  _baseHeight: 32
-  _heightVariation: 16
+  _baseHeight: 24
+  _heightVariation: 12
   _fillerDepth: 3
   _stoneStartHeight: 20
   _treeChance: 0.02
@@ -30,5 +30,5 @@ MonoBehaviour:
     MinTrunkHeight: 3
     MaxTrunkHeight: 5
     LeafRadius: 3
-  _waterLevel: 28
+  _waterLevel: 20
   _beachHeight: 2

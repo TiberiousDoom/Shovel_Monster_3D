@@ -156,17 +156,18 @@ namespace VoxelRPG.Player
         /// </summary>
         public void OnCrouch(InputAction.CallbackContext context)
         {
+            Debug.Log($"[PlayerController] OnCrouch called, phase={context.phase}");
             if (context.started)
             {
                 _isCrouching = true;
                 _targetHeight = _crouchingHeight;
-                Debug.Log("[PlayerController] Crouch started");
+                Debug.Log("[PlayerController] Crouch started - height target set to " + _crouchingHeight);
             }
             else if (context.canceled)
             {
                 _isCrouching = false;
                 _targetHeight = _standingHeight;
-                Debug.Log("[PlayerController] Crouch ended");
+                Debug.Log("[PlayerController] Crouch ended - height target set to " + _standingHeight);
             }
         }
 
