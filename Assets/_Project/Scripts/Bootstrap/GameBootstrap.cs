@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using VoxelRPG.Core;
@@ -78,6 +79,22 @@ namespace VoxelRPG.Bootstrap
 
         private void SetupWorld()
         {
+            // Verify BlockRegistry is initialized before creating world
+            var blockRegistry = FindFirstObjectByType<BlockRegistry>();
+            if (blockRegistry == null)
+            {
+                Debug.LogError("[GameBootstrap] BlockRegistry not found in scene! World generation will fail.");
+                return;
+            }
+
+            if (BlockType.Air == null)
+            {
+                Debug.LogError("[GameBootstrap] BlockType.Air is null! BlockRegistry may not have initialized properly.");
+                return;
+            }
+
+            Debug.Log($"[GameBootstrap] BlockRegistry found with {blockRegistry.GetAll().Count()} blocks. Air block: {BlockType.Air?.DisplayName ?? "NULL"}");
+
             // Check if VoxelWorld already exists
             if (FindFirstObjectByType<VoxelWorld>() != null)
             {
