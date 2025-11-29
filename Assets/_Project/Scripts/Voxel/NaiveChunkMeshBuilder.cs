@@ -4,23 +4,6 @@ using UnityEngine;
 namespace VoxelRPG.Voxel
 {
     /// <summary>
-    /// A virtual block type that acts as solid for mesh generation purposes.
-    /// Used to prevent rendering faces at world boundaries.
-    /// </summary>
-    internal class VirtualSolidBlockType : BlockType
-    {
-        /// <summary>
-        /// Always returns true - this virtual block is treated as solid.
-        /// </summary>
-        public override bool IsSolid => true;
-
-        /// <summary>
-        /// Always returns false - this virtual block is opaque.
-        /// </summary>
-        public override bool IsTransparent => false;
-    }
-
-    /// <summary>
     /// Simple mesh builder that creates visible faces for each solid block.
     /// Only renders faces adjacent to transparent/air blocks.
     /// Phase 0A implementation - will be replaced with greedy meshing in Phase 0B.
@@ -148,10 +131,9 @@ namespace VoxelRPG.Voxel
             for (int face = 0; face < 6; face++)
             {
                 var neighborPos = new Vector3Int(x, y, z) + FaceDirections[face];
-                var neighbor = GetNeighborBlock(chunk, neighborPos);
 
-                // Only add face if neighbor is transparent or air
-                if (neighbor != null && neighbor.IsSolid && !neighbor.IsTransparent)
+                // Check if neighbor blocks this face
+                if (IsNeighborSolidAndOpaque(chunk, neighborPos))
                 {
                     continue;
                 }
@@ -160,12 +142,17 @@ namespace VoxelRPG.Voxel
             }
         }
 
-        private BlockType GetNeighborBlock(VoxelChunk chunk, Vector3Int localPos)
+        /// <summary>
+        /// Checks if a neighbor position contains a solid, opaque block that would hide a face.
+        /// Returns true if the face should NOT be rendered (neighbor is solid and opaque).
+        /// </summary>
+        private bool IsNeighborSolidAndOpaque(VoxelChunk chunk, Vector3Int localPos)
         {
             // Check if within chunk bounds
             if (chunk.IsLocalPositionValid(localPos.x, localPos.y, localPos.z))
             {
-                return chunk.GetBlockLocal(localPos);
+                var neighbor = chunk.GetBlockLocal(localPos);
+                return neighbor != null && neighbor.IsSolid && !neighbor.IsTransparent;
             }
 
             // Get from neighboring chunk via world
@@ -176,28 +163,23 @@ namespace VoxelRPG.Voxel
                 // Check if position is outside world bounds
                 if (!chunk.World.IsPositionValid(worldPos))
                 {
-                    // Return a "virtual solid" for positions outside world bounds
-                    // This prevents interior faces from rendering at world edges
-                    // Only treat as solid if below the surface (Y < world height - some buffer)
-                    // Above world or at horizontal edges, treat as air
+                    // Positions below Y=0 are treated as solid (don't render bottom faces)
+                    // This prevents seeing through the bottom of the world
                     if (worldPos.y < 0)
                     {
-                        // Below world - treat as solid (don't render bottom faces)
-                        return _virtualSolidBlock;
+                        return true; // Virtual solid - hide this face
                     }
-                    // At horizontal world edges or above - treat as air
-                    return BlockType.Air;
+                    // At horizontal world edges or above - treat as air (show face)
+                    return false;
                 }
 
-                return chunk.World.GetBlock(worldPos);
+                var neighbor = chunk.World.GetBlock(worldPos);
+                return neighbor != null && neighbor.IsSolid && !neighbor.IsTransparent;
             }
 
-            // No world reference, assume air at chunk boundaries
-            return BlockType.Air;
+            // No world reference, assume air at chunk boundaries (show face)
+            return false;
         }
-
-        // Virtual solid block used to prevent rendering interior faces at world boundaries
-        private static readonly VirtualSolidBlockType _virtualSolidBlock = new VirtualSolidBlockType();
 
         private void AddFace(Vector3 blockPos, int faceIndex, Color color)
         {
