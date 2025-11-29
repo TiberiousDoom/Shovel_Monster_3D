@@ -15,7 +15,7 @@ namespace VoxelRPG.Voxel
     {
         [Header("World Settings")]
         [SerializeField] private int _worldSizeInChunks = 4;
-        [SerializeField] private int _worldHeightInChunks = 2;
+        [SerializeField] private int _worldHeightInChunks = 4;
 
         [Header("Generation")]
         [Tooltip("Enable procedural world generation using WorldGenerator")]

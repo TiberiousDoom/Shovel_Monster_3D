@@ -206,9 +206,11 @@ namespace VoxelRPG.Player
         /// </summary>
         public void OnPrimaryAction(InputAction.CallbackContext context)
         {
+            Debug.Log($"[BlockInteraction] OnPrimaryAction called, phase={context.phase}, started={context.started}");
             if (context.started)
             {
                 _breakBlockPressed = true;
+                Debug.Log($"[BlockInteraction] Break block pressed. HasTarget={HasTarget}, TargetPos={TargetBlockPosition}");
             }
         }
 
@@ -217,9 +219,11 @@ namespace VoxelRPG.Player
         /// </summary>
         public void OnSecondaryAction(InputAction.CallbackContext context)
         {
+            Debug.Log($"[BlockInteraction] OnSecondaryAction called, phase={context.phase}, started={context.started}");
             if (context.started)
             {
                 _placeBlockPressed = true;
+                Debug.Log($"[BlockInteraction] Place block pressed. PlacePos={PlacePosition}, SelectedBlock={SelectedBlockType?.DisplayName ?? "NULL"}");
             }
         }
 
