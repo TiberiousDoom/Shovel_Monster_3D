@@ -170,6 +170,14 @@ namespace VoxelRPG.Voxel
                 }
 
                 var neighbor = chunk.World.GetBlock(worldPos);
+
+                // Debug: Log cross-chunk queries to verify they work
+                if (_debugLogged < 5 && neighbor != null && neighbor.IsSolid)
+                {
+                    UnityEngine.Debug.Log($"[MeshBuilder] Cross-chunk query: chunk {chunk.ChunkPosition} localPos {localPos} -> worldPos {worldPos} = {neighbor.Id}");
+                    _debugLogged++;
+                }
+
                 return neighbor != null && neighbor.IsSolid && !neighbor.IsTransparent;
             }
 
@@ -177,21 +185,19 @@ namespace VoxelRPG.Voxel
             return false;
         }
 
-        // Small offset to prevent z-fighting at block boundaries
-        private const float FACE_OFFSET = 0.001f;
+        private static int _debugLogged = 0;
 
         private void AddFace(Vector3 blockPos, int faceIndex, Color color)
         {
             int vertexStart = _vertices.Count;
 
-            // Add vertices with small offset along normal to prevent z-fighting
+            // Add vertices
             var faceVerts = FaceVertices[faceIndex];
             var normal = FaceNormals[faceIndex];
-            var offset = normal * FACE_OFFSET;
 
             for (int i = 0; i < 4; i++)
             {
-                _vertices.Add(blockPos + faceVerts[i] + offset);
+                _vertices.Add(blockPos + faceVerts[i]);
                 _normals.Add(normal);
                 _colors.Add(color);
             }
