@@ -26,6 +26,8 @@ namespace VoxelRPG.Voxel.Generation
             _seedOffsetZ = (float)(random.NextDouble() * 10000);
         }
 
+        private static bool _debugLogged = false;
+
         /// <summary>
         /// Determines if an ore should be placed at the given world position.
         /// </summary>
@@ -53,6 +55,16 @@ namespace VoxelRPG.Voxel.Generation
             // Apply threshold based on ore rarity
             // Lower spawn chance = higher threshold needed
             float threshold = 1f - oreConfig.SpawnChance;
+
+            // Debug: Log noise values for first few valid positions
+            if (!_debugLogged && worldPosition.x == 8 && worldPosition.z == 8)
+            {
+                Debug.Log($"[OreGenerator] DEBUG at {worldPosition}: depth={depth}, surface={surfaceHeight}, noise={noiseValue:F3}, threshold={threshold:F3}, passes={noiseValue > threshold}");
+                if (worldPosition.y == 0)
+                {
+                    _debugLogged = true;
+                }
+            }
 
             return noiseValue > threshold;
         }
