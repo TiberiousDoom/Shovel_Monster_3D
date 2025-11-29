@@ -87,6 +87,10 @@ namespace VoxelRPG.Voxel.Generation
         [Tooltip("Beach height above water level")]
         [SerializeField] private int _beachHeight = 2;
 
+        [Header("Ore Generation")]
+        [Tooltip("Ore types that can spawn in this biome")]
+        [SerializeField] private OreConfig[] _oreConfigs;
+
         // Properties
         public string Id => _id;
         public string DisplayName => _displayName;
@@ -103,6 +107,7 @@ namespace VoxelRPG.Voxel.Generation
         public TreeType[] TreeTypes => _treeTypes;
         public int WaterLevel => _waterLevel;
         public int BeachHeight => _beachHeight;
+        public OreConfig[] OreConfigs => _oreConfigs;
 
         /// <summary>
         /// Gets a random tree type from this biome's available trees.

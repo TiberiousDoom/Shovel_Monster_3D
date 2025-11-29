@@ -34,6 +34,7 @@ namespace VoxelRPG.Voxel.Generation
         private System.Random _random;
         private VoxelWorld _world;
         private VegetationGenerator _vegetationGenerator;
+        private OreGenerator _oreGenerator;
         private float _seedOffsetX;
         private float _seedOffsetZ;
 
@@ -58,6 +59,7 @@ namespace VoxelRPG.Voxel.Generation
             _seedOffsetZ = (float)(_random.NextDouble() * 10000);
 
             _vegetationGenerator = new VegetationGenerator(_seed);
+            _oreGenerator = new OreGenerator(_seed);
             _isInitialized = true;
 
             Debug.Log($"[WorldGenerator] Initialized with seed: {_seed}");
@@ -102,6 +104,7 @@ namespace VoxelRPG.Voxel.Generation
         /// <inheritdoc/>
         public void GenerateChunk(VoxelChunk chunk)
         {
+            EnsureInitialized();
             var chunkWorldPos = chunk.ChunkPosition * VoxelChunk.SIZE;
 
             // First pass: Generate terrain
@@ -128,8 +131,26 @@ namespace VoxelRPG.Voxel.Generation
                 }
             }
 
-            // Second pass: Generate vegetation (trees, etc.)
+            // Second pass: Generate ores
+            GenerateOres(chunk, chunkWorldPos);
+
+            // Third pass: Generate vegetation (trees, etc.)
             GenerateVegetation(chunk, chunkWorldPos);
+        }
+
+        private void GenerateOres(VoxelChunk chunk, Vector3Int chunkWorldPos)
+        {
+            // Get biome at chunk center for ore config (could be improved with per-block biome)
+            int centerX = chunkWorldPos.x + VoxelChunk.SIZE / 2;
+            int centerZ = chunkWorldPos.z + VoxelChunk.SIZE / 2;
+            var biome = GetBiomeAt(centerX, centerZ);
+
+            if (biome == null || biome.OreConfigs == null || biome.OreConfigs.Length == 0)
+            {
+                return;
+            }
+
+            _oreGenerator.GenerateOresInChunk(chunk, biome, GetSurfaceHeight);
         }
 
         private void GenerateVegetation(VoxelChunk chunk, Vector3Int chunkWorldPos)
