@@ -222,10 +222,44 @@ namespace VoxelRPG.Bootstrap
                 // Spawn player 2 blocks above terrain surface
                 spawnPos.y = terrainHeight + 2f;
 
+                // Clear area around spawn point to avoid spawning inside trees
+                ClearSpawnArea(spawnX, terrainHeight, spawnZ);
+
                 Debug.Log($"[GameBootstrap] Auto spawn height: terrain={terrainHeight}, spawn Y={spawnPos.y}");
             }
 
             return spawnPos;
+        }
+
+        private void ClearSpawnArea(int centerX, int groundY, int centerZ)
+        {
+            var world = FindFirstObjectByType<VoxelWorld>();
+            if (world == null) return;
+
+            // Clear a 3x3x4 area above the ground (player is about 2 blocks tall)
+            for (int x = centerX - 1; x <= centerX + 1; x++)
+            {
+                for (int z = centerZ - 1; z <= centerZ + 1; z++)
+                {
+                    for (int y = groundY + 1; y <= groundY + 4; y++)
+                    {
+                        var pos = new Vector3Int(x, y, z);
+                        if (world.IsPositionValid(pos))
+                        {
+                            var block = world.GetBlock(pos);
+                            // Only clear non-terrain blocks (leaves, wood from trees)
+                            if (block != null && block != BlockType.Air &&
+                                block.Id != "grass" && block.Id != "dirt" && block.Id != "stone")
+                            {
+                                world.RequestBlockChange(pos, BlockType.Air);
+                            }
+                        }
+                    }
+                }
+            }
+
+            world.RebuildDirtyChunks();
+            Debug.Log($"[GameBootstrap] Cleared spawn area around ({centerX}, {groundY}, {centerZ})");
         }
 
         private void CreateDefaultPlayer(Vector3 spawnPosition)
@@ -290,6 +324,12 @@ namespace VoxelRPG.Bootstrap
                 // Subscribe to input events
                 playerInput.onActionTriggered += context =>
                 {
+                    // Debug: Log all triggered actions to verify input is working
+                    if (context.action.name == "PrimaryAction" || context.action.name == "SecondaryAction" || context.action.name == "Crouch")
+                    {
+                        Debug.Log($"[GameBootstrap] Input action triggered: {context.action.name}, phase={context.phase}");
+                    }
+
                     switch (context.action.name)
                     {
                         case "Move":
