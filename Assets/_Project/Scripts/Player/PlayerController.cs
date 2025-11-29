@@ -47,6 +47,7 @@ namespace VoxelRPG.Player
 
         private Vector2 _moveInput;
         private bool _jumpPressed;
+        private bool _jumpHeld;
 
         /// <summary>
         /// Current movement speed accounting for sprint and crouch.
@@ -126,11 +127,10 @@ namespace VoxelRPG.Player
         {
             if (_disableGravity)
             {
-                // Fly mode - use jump/crouch for vertical movement
-                if (_jumpPressed)
+                // Fly mode - use jump/crouch for vertical movement (continuous while held)
+                if (_jumpHeld)
                 {
                     _velocity.y = _moveSpeed;
-                    _jumpPressed = false;
                 }
                 else if (_isCrouching)
                 {
@@ -172,6 +172,11 @@ namespace VoxelRPG.Player
             if (context.started)
             {
                 _jumpPressed = true;
+                _jumpHeld = true;
+            }
+            else if (context.canceled)
+            {
+                _jumpHeld = false;
             }
         }
 
