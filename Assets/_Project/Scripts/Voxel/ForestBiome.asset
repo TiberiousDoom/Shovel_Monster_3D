@@ -36,15 +36,15 @@ MonoBehaviour:
   - OreBlock: {fileID: 11400000, guid: fc0992dc87eb46ffa6cfcef34c5f5af4, type: 2}
     MinDepth: 3
     MaxDepth: 40
-    SpawnChance: 0.08
+    SpawnChance: 0.008
     NoiseScale: 0.15
   - OreBlock: {fileID: 11400000, guid: 7f61d5ea3fdc469e97d4d4cf1c23b524, type: 2}
     MinDepth: 8
     MaxDepth: 50
-    SpawnChance: 0.05
+    SpawnChance: 0.004
     NoiseScale: 0.12
   - OreBlock: {fileID: 11400000, guid: 263be69a85284f5dac2df1ca6d545d4e, type: 2}
     MinDepth: 15
     MaxDepth: 60
-    SpawnChance: 0.02
+    SpawnChance: 0.001
     NoiseScale: 0.1

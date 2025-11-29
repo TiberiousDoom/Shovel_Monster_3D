@@ -26,8 +26,6 @@ namespace VoxelRPG.Voxel.Generation
             _seedOffsetZ = (float)(random.NextDouble() * 10000);
         }
 
-        private static bool _debugLogged = false;
-
         /// <summary>
         /// Determines if an ore should be placed at the given world position.
         /// </summary>
@@ -55,19 +53,7 @@ namespace VoxelRPG.Voxel.Generation
             // Apply threshold based on ore rarity
             // With multiplied noise (clusters near 0), spawn ore where noise < spawnChance
             // This creates vein-like pockets at positions with consistently low noise
-            float threshold = oreConfig.SpawnChance;
-
-            // Debug: Log noise values for first few valid positions
-            if (!_debugLogged && worldPosition.x == 8 && worldPosition.z == 8)
-            {
-                Debug.Log($"[OreGenerator] DEBUG at {worldPosition}: depth={depth}, surface={surfaceHeight}, noise={noiseValue:F3}, threshold={threshold:F3}, passes={noiseValue < threshold}");
-                if (worldPosition.y == 0)
-                {
-                    _debugLogged = true;
-                }
-            }
-
-            return noiseValue < threshold;
+            return noiseValue < oreConfig.SpawnChance;
         }
 
         /// <summary>
@@ -138,58 +124,12 @@ namespace VoxelRPG.Voxel.Generation
         public void GenerateOresInChunk(VoxelChunk chunk, BiomeDefinition biome,
             System.Func<int, int, int> getSurfaceHeight)
         {
-            if (biome == null)
+            if (biome?.OreConfigs == null || biome.OreConfigs.Length == 0)
             {
-                Debug.LogWarning("[OreGenerator] Biome is null, skipping ore generation");
                 return;
-            }
-
-            if (biome.OreConfigs == null)
-            {
-                Debug.LogWarning($"[OreGenerator] Biome '{biome.DisplayName}' has null OreConfigs");
-                return;
-            }
-
-            if (biome.OreConfigs.Length == 0)
-            {
-                Debug.LogWarning($"[OreGenerator] Biome '{biome.DisplayName}' has empty OreConfigs array");
-                return;
-            }
-
-            // Log ore config info for first chunk
-            if (chunk.ChunkPosition == Vector3Int.zero)
-            {
-                Debug.Log($"[OreGenerator] Biome '{biome.DisplayName}' has {biome.OreConfigs.Length} ore configs:");
-                for (int i = 0; i < biome.OreConfigs.Length; i++)
-                {
-                    var cfg = biome.OreConfigs[i];
-                    if (cfg == null)
-                    {
-                        Debug.LogWarning($"  [{i}] OreConfig is NULL");
-                    }
-                    else if (cfg.OreBlock == null)
-                    {
-                        Debug.LogWarning($"  [{i}] OreBlock is NULL (depth {cfg.MinDepth}-{cfg.MaxDepth}, chance {cfg.SpawnChance})");
-                    }
-                    else
-                    {
-                        Debug.Log($"  [{i}] {cfg.OreBlock.DisplayName}: depth {cfg.MinDepth}-{cfg.MaxDepth}, chance {cfg.SpawnChance}, scale {cfg.NoiseScale}");
-                    }
-                }
-
-                if (biome.StoneBlock == null)
-                {
-                    Debug.LogWarning($"[OreGenerator] Biome '{biome.DisplayName}' has NULL StoneBlock - ores cannot replace anything!");
-                }
-                else
-                {
-                    Debug.Log($"[OreGenerator] Will replace StoneBlock '{biome.StoneBlock.DisplayName}'");
-                }
             }
 
             var chunkWorldPos = chunk.ChunkPosition * VoxelChunk.SIZE;
-            int oresPlaced = 0;
-            int stoneBlocksFound = 0;
 
             for (int x = 0; x < VoxelChunk.SIZE; x++)
             {
@@ -210,23 +150,16 @@ namespace VoxelRPG.Voxel.Generation
                         // Only replace stone blocks with ore
                         if (currentBlock == biome.StoneBlock)
                         {
-                            stoneBlocksFound++;
                             var oreBlock = GetOreAt(worldPos, biome.OreConfigs,
                                 surfaceHeight, biome.StoneBlock, currentBlock);
 
                             if (oreBlock != null)
                             {
                                 chunk.SetBlockLocal(localPos, oreBlock);
-                                oresPlaced++;
                             }
                         }
                     }
                 }
-            }
-
-            if (stoneBlocksFound > 0 || oresPlaced > 0)
-            {
-                Debug.Log($"[OreGenerator] Chunk {chunk.ChunkPosition}: Found {stoneBlocksFound} stone blocks, placed {oresPlaced} ore blocks");
             }
         }
     }
