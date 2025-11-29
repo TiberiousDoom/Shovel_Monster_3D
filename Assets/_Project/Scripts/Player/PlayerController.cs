@@ -18,6 +18,10 @@ namespace VoxelRPG.Player
         [SerializeField] private float _jumpHeight = 1.2f;
         [SerializeField] private float _gravity = -15f;
 
+        [Header("Debug")]
+        [Tooltip("Disable gravity for testing (fly mode)")]
+        [SerializeField] private bool _disableGravity = true;
+
         [Header("Crouch Settings")]
         [SerializeField] private float _standingHeight = 1.8f;
         [SerializeField] private float _crouchingHeight = 1.0f;
@@ -120,14 +124,35 @@ namespace VoxelRPG.Player
 
         private void HandleGravityAndJump()
         {
-            if (_jumpPressed && _isGrounded)
+            if (_disableGravity)
             {
-                // v = sqrt(2 * g * h)
-                _velocity.y = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
-                _jumpPressed = false;
+                // Fly mode - use jump/crouch for vertical movement
+                if (_jumpPressed)
+                {
+                    _velocity.y = _moveSpeed;
+                    _jumpPressed = false;
+                }
+                else if (_isCrouching)
+                {
+                    _velocity.y = -_moveSpeed;
+                }
+                else
+                {
+                    _velocity.y = 0;
+                }
+            }
+            else
+            {
+                if (_jumpPressed && _isGrounded)
+                {
+                    // v = sqrt(2 * g * h)
+                    _velocity.y = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
+                    _jumpPressed = false;
+                }
+
+                _velocity.y += _gravity * Time.deltaTime;
             }
 
-            _velocity.y += _gravity * Time.deltaTime;
             _characterController.Move(_velocity * Time.deltaTime);
         }
 
