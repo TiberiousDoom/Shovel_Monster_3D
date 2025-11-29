@@ -266,8 +266,9 @@ namespace VoxelRPG.Bootstrap
                 playerInput.defaultActionMap = "Player";
                 playerInput.notificationBehavior = PlayerNotifications.InvokeCSharpEvents;
 
-                // Get the player controller to wire up input events
+                // Get the player controller and block interaction to wire up input events
                 var controller = playerObject.GetComponent<PlayerController>();
+                var blockInteraction = playerObject.GetComponent<BlockInteraction>();
 
                 // Subscribe to input events
                 playerInput.onActionTriggered += context =>
@@ -288,6 +289,12 @@ namespace VoxelRPG.Bootstrap
                             break;
                         case "Crouch":
                             controller.OnCrouch(context);
+                            break;
+                        case "PrimaryAction":
+                            blockInteraction.OnPrimaryAction(context);
+                            break;
+                        case "SecondaryAction":
+                            blockInteraction.OnSecondaryAction(context);
                             break;
                     }
                 };
