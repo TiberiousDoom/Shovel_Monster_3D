@@ -23,7 +23,7 @@ namespace VoxelRPG.Player
         [Tooltip("Disable gravity for testing (fly mode)")]
         [SerializeField] private bool _disableGravity = true;
 
-        [Tooltip("Automatically clear a 3x3x3 area around player while flying (for exploring underground)")]
+        [Tooltip("Automatically clear a 5x5x5 area around player while flying (for exploring underground)")]
         [SerializeField] private bool _autoClearBlocks = false;
 
         [Header("Crouch Settings")]
@@ -264,7 +264,7 @@ namespace VoxelRPG.Player
         }
 
         /// <summary>
-        /// Debug: Clears a 3x3x3 area of blocks around the player for exploring underground.
+        /// Debug: Clears a 5x5x5 area of blocks around the player for exploring underground.
         /// </summary>
         private void ClearBlocksAroundPlayer()
         {
@@ -280,12 +280,12 @@ namespace VoxelRPG.Player
 
             bool anyCleared = false;
 
-            // Clear 3x3x3 around player
-            for (int x = -1; x <= 1; x++)
+            // Clear 5x5x5 around player (radius of 2 in each direction)
+            for (int x = -2; x <= 2; x++)
             {
-                for (int y = -1; y <= 1; y++)
+                for (int y = -2; y <= 2; y++)
                 {
-                    for (int z = -1; z <= 1; z++)
+                    for (int z = -2; z <= 2; z++)
                     {
                         var pos = playerBlockPos + new Vector3Int(x, y, z);
 
