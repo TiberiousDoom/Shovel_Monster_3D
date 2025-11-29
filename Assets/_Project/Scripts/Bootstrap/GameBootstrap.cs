@@ -131,7 +131,11 @@ namespace VoxelRPG.Bootstrap
                 GenerateFlatTerrain(world);
             }
 
-            // Setup player after terrain is generated
+            // Wait additional frames for chunks to be fully generated and meshed
+            yield return null;
+            yield return null;
+
+            // Setup player after terrain is generated and chunks are ready
             SetupPlayer();
 
             Debug.Log("[GameBootstrap] Scene setup complete.");
@@ -244,8 +248,9 @@ namespace VoxelRPG.Bootstrap
                     }
                 }
 
-                // Spawn player 2 blocks above the actual surface
-                spawnPos.y = actualSurface + 2f;
+                // Spawn player 1 block above the actual surface (feet on ground)
+                // actualSurface is the Y where solid block exists, so +1 puts feet on top of it
+                spawnPos.y = actualSurface + 1f;
 
                 Debug.Log($"[GameBootstrap] Auto spawn height: terrain={terrainHeight}, actualSurface={actualSurface}, spawn Y={spawnPos.y}");
             }
