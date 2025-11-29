@@ -1,12 +1,8 @@
 {
-    "name": "VoxelRPG.Player",
-    "rootNamespace": "VoxelRPG.Player",
+    "name": "VoxelRPG.Combat",
+    "rootNamespace": "VoxelRPG.Combat",
     "references": [
-        "VoxelRPG.Core",
-        "VoxelRPG.Voxel",
-        "VoxelRPG.Utilities",
-        "VoxelRPG.Combat",
-        "Unity.InputSystem"
+        "VoxelRPG.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
