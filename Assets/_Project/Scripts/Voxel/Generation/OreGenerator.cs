@@ -121,8 +121,10 @@ namespace VoxelRPG.Voxel.Generation
             float noiseYZ = Mathf.PerlinNoise(sampleY, sampleZ);
             float noiseXZ = Mathf.PerlinNoise(sampleX, sampleZ);
 
-            // Average the three planes
-            return (noiseXY + noiseYZ + noiseXZ) / 3f;
+            // Multiply the noise samples instead of averaging
+            // This creates pockets where all three values are high (ore veins)
+            // Result ranges 0-1, but ore only spawns where all three samples are high
+            return noiseXY * noiseYZ * noiseXZ;
         }
 
         /// <summary>
