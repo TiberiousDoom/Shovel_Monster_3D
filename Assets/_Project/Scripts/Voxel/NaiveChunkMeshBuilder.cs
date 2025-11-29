@@ -83,8 +83,6 @@ namespace VoxelRPG.Voxel
             _normals.Clear();
             _colors.Clear();
 
-            int solidBlocks = 0;
-
             for (int x = 0; x < VoxelChunk.SIZE; x++)
             {
                 for (int y = 0; y < VoxelChunk.SIZE; y++)
@@ -98,7 +96,6 @@ namespace VoxelRPG.Voxel
                             continue;
                         }
 
-                        solidBlocks++;
                         AddBlockFaces(chunk, x, y, z, block);
                     }
                 }
@@ -116,10 +113,9 @@ namespace VoxelRPG.Voxel
 
             mesh.RecalculateBounds();
 
-            if (_vertices.Count == 0)
-            {
-                Debug.LogWarning($"[NaiveChunkMeshBuilder] Chunk {chunk.ChunkPosition} has no visible faces! Solid blocks found: {solidBlocks}");
-            }
+            // Note: Empty meshes are normal for:
+            // - Air chunks above terrain (solidBlocks == 0)
+            // - Fully enclosed underground chunks (all neighbors are solid)
 
             return mesh;
         }
