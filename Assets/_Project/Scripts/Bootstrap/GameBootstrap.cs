@@ -276,7 +276,7 @@ namespace VoxelRPG.Bootstrap
             characterController.center = new Vector3(0, 0.9f, 0);
 
             // Add PlayerController
-            playerObject.AddComponent<PlayerController>();
+            var playerController = playerObject.AddComponent<PlayerController>();
 
             // Create camera holder
             var cameraHolder = new GameObject("CameraHolder");
@@ -302,6 +302,9 @@ namespace VoxelRPG.Bootstrap
             var playerCamera = cameraObject.AddComponent<PlayerCamera>();
             playerCamera.SetPlayerBody(playerObject.transform);
 
+            // Wire up camera holder for crouch
+            playerController.SetCameraHolder(cameraHolder.transform);
+
             // Add BlockInteraction
             playerObject.AddComponent<BlockInteraction>();
 
@@ -318,8 +321,7 @@ namespace VoxelRPG.Bootstrap
                 playerInput.defaultActionMap = "Player";
                 playerInput.notificationBehavior = PlayerNotifications.InvokeCSharpEvents;
 
-                // Get the player controller and block interaction to wire up input events
-                var controller = playerObject.GetComponent<PlayerController>();
+                // Get the block interaction to wire up input events
                 var blockInteraction = playerObject.GetComponent<BlockInteraction>();
 
                 // Subscribe to input events
@@ -334,19 +336,19 @@ namespace VoxelRPG.Bootstrap
                     switch (context.action.name)
                     {
                         case "Move":
-                            controller.OnMove(context);
+                            playerController.OnMove(context);
                             break;
                         case "Look":
                             playerCamera.OnLook(context);
                             break;
                         case "Jump":
-                            controller.OnJump(context);
+                            playerController.OnJump(context);
                             break;
                         case "Sprint":
-                            controller.OnSprint(context);
+                            playerController.OnSprint(context);
                             break;
                         case "Crouch":
-                            controller.OnCrouch(context);
+                            playerController.OnCrouch(context);
                             break;
                         case "PrimaryAction":
                             blockInteraction.OnPrimaryAction(context);

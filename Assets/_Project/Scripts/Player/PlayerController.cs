@@ -28,12 +28,18 @@ namespace VoxelRPG.Player
         [SerializeField] private float _groundDistance = 0.2f;
         [SerializeField] private LayerMask _groundMask;
 
+        [Header("Camera")]
+        [SerializeField] private Transform _cameraHolder;
+        [SerializeField] private float _standingCameraHeight = 1.6f;
+        [SerializeField] private float _crouchingCameraHeight = 0.8f;
+
         private CharacterController _characterController;
         private Vector3 _velocity;
         private bool _isGrounded;
         private bool _isSprinting;
         private bool _isCrouching;
         private float _targetHeight;
+        private float _targetCameraHeight;
 
         private Vector2 _moveInput;
         private bool _jumpPressed;
@@ -65,6 +71,7 @@ namespace VoxelRPG.Player
         {
             _characterController = GetComponent<CharacterController>();
             _targetHeight = _standingHeight;
+            _targetCameraHeight = _standingCameraHeight;
 
             // Register with ServiceLocator
             ServiceLocator.Register<PlayerController>(this);
@@ -161,12 +168,14 @@ namespace VoxelRPG.Player
             {
                 _isCrouching = true;
                 _targetHeight = _crouchingHeight;
+                _targetCameraHeight = _crouchingCameraHeight;
                 Debug.Log("[PlayerController] Crouch started - height target set to " + _crouchingHeight);
             }
             else if (context.canceled)
             {
                 _isCrouching = false;
                 _targetHeight = _standingHeight;
+                _targetCameraHeight = _standingCameraHeight;
                 Debug.Log("[PlayerController] Crouch ended - height target set to " + _standingHeight);
             }
         }
@@ -177,12 +186,20 @@ namespace VoxelRPG.Player
             if (Mathf.Abs(_characterController.height - _targetHeight) > 0.01f)
             {
                 float newHeight = Mathf.Lerp(_characterController.height, _targetHeight, _crouchTransitionSpeed * Time.deltaTime);
-                float heightDiff = newHeight - _characterController.height;
 
                 _characterController.height = newHeight;
                 _characterController.center = new Vector3(0, newHeight / 2f, 0);
+            }
 
-                // Move camera down when crouching (handled by adjusting center)
+            // Smoothly transition camera height
+            if (_cameraHolder != null)
+            {
+                var currentCamHeight = _cameraHolder.localPosition.y;
+                if (Mathf.Abs(currentCamHeight - _targetCameraHeight) > 0.01f)
+                {
+                    float newCamHeight = Mathf.Lerp(currentCamHeight, _targetCameraHeight, _crouchTransitionSpeed * Time.deltaTime);
+                    _cameraHolder.localPosition = new Vector3(0, newCamHeight, 0);
+                }
             }
         }
 
@@ -196,6 +213,15 @@ namespace VoxelRPG.Player
             transform.position = position;
             _characterController.enabled = true;
             _velocity = Vector3.zero;
+        }
+
+        /// <summary>
+        /// Sets the camera holder transform for crouch camera movement.
+        /// </summary>
+        /// <param name="cameraHolder">The camera holder transform.</param>
+        public void SetCameraHolder(Transform cameraHolder)
+        {
+            _cameraHolder = cameraHolder;
         }
     }
 }
