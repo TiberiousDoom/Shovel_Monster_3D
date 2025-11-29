@@ -107,6 +107,8 @@ namespace VoxelRPG.Voxel.Generation
             EnsureInitialized();
             var chunkWorldPos = chunk.ChunkPosition * VoxelChunk.SIZE;
 
+            int blocksSet = 0;
+
             // First pass: Generate terrain
             for (int x = 0; x < VoxelChunk.SIZE; x++)
             {
@@ -118,6 +120,12 @@ namespace VoxelRPG.Voxel.Generation
                     var biome = GetBiomeAt(worldX, worldZ);
                     int surfaceHeight = GetSurfaceHeight(worldX, worldZ);
 
+                    // Log first column of first chunk for debugging
+                    if (chunk.ChunkPosition == Vector3Int.zero && x == 0 && z == 0)
+                    {
+                        Debug.Log($"[WorldGenerator] Chunk 0,0,0 column 0,0: biome={biome?.DisplayName ?? "NULL"}, surfaceHeight={surfaceHeight}");
+                    }
+
                     for (int y = 0; y < VoxelChunk.SIZE; y++)
                     {
                         int worldY = chunkWorldPos.y + y;
@@ -126,10 +134,13 @@ namespace VoxelRPG.Voxel.Generation
                         if (block != null && block != BlockType.Air)
                         {
                             chunk.SetBlockLocal(new Vector3Int(x, y, z), block);
+                            blocksSet++;
                         }
                     }
                 }
             }
+
+            Debug.Log($"[WorldGenerator] Chunk {chunk.ChunkPosition}: Set {blocksSet} non-air blocks");
 
             // Second pass: Generate ores
             GenerateOres(chunk, chunkWorldPos);

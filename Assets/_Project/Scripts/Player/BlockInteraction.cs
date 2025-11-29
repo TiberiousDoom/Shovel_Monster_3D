@@ -13,7 +13,8 @@ namespace VoxelRPG.Player
     {
         [Header("Interaction Settings")]
         [SerializeField] private float _interactionRange = 5f;
-        [SerializeField] private LayerMask _blockLayerMask;
+        [Tooltip("Layer mask for block raycasting. Use Everything (-1) if unset.")]
+        [SerializeField] private LayerMask _blockLayerMask = -1;
 
         [Header("References")]
         [SerializeField] private Camera _playerCamera;
@@ -55,6 +56,21 @@ namespace VoxelRPG.Player
             if (_playerCamera == null)
             {
                 _playerCamera = Camera.main;
+            }
+
+            // Set a default block for placing if registry is available
+            if (_blockRegistry != null && SelectedBlockType == null)
+            {
+                // Try to get a non-air block as default
+                foreach (var block in _blockRegistry.GetAll())
+                {
+                    if (block != null && block != BlockType.Air && block.IsPlaceable)
+                    {
+                        SelectedBlockType = block;
+                        Debug.Log($"[BlockInteraction] Default block set to: {block.DisplayName}");
+                        break;
+                    }
+                }
             }
         }
 

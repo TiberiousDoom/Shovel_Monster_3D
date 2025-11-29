@@ -76,6 +76,11 @@ namespace VoxelRPG.Voxel
             _blocks = new BlockType[SIZE, SIZE, SIZE];
             var air = BlockType.Air;
 
+            if (air == null)
+            {
+                Debug.LogError($"[VoxelChunk] BlockType.Air is NULL during chunk initialization! ChunkPos: {chunkPosition}");
+            }
+
             for (int x = 0; x < SIZE; x++)
             {
                 for (int y = 0; y < SIZE; y++)

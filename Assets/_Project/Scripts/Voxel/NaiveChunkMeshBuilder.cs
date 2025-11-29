@@ -83,6 +83,8 @@ namespace VoxelRPG.Voxel
             _normals.Clear();
             _colors.Clear();
 
+            int solidBlocks = 0;
+
             for (int x = 0; x < VoxelChunk.SIZE; x++)
             {
                 for (int y = 0; y < VoxelChunk.SIZE; y++)
@@ -96,6 +98,7 @@ namespace VoxelRPG.Voxel
                             continue;
                         }
 
+                        solidBlocks++;
                         AddBlockFaces(chunk, x, y, z, block);
                     }
                 }
@@ -112,6 +115,11 @@ namespace VoxelRPG.Voxel
             mesh.SetColors(_colors);
 
             mesh.RecalculateBounds();
+
+            if (_vertices.Count == 0)
+            {
+                Debug.LogWarning($"[NaiveChunkMeshBuilder] Chunk {chunk.ChunkPosition} has no visible faces! Solid blocks found: {solidBlocks}");
+            }
 
             return mesh;
         }

@@ -14,8 +14,14 @@ namespace VoxelRPG.Player
         [Header("Movement Settings")]
         [SerializeField] private float _moveSpeed = 5f;
         [SerializeField] private float _sprintMultiplier = 1.5f;
+        [SerializeField] private float _crouchMultiplier = 0.5f;
         [SerializeField] private float _jumpHeight = 1.2f;
         [SerializeField] private float _gravity = -15f;
+
+        [Header("Crouch Settings")]
+        [SerializeField] private float _standingHeight = 1.8f;
+        [SerializeField] private float _crouchingHeight = 1.0f;
+        [SerializeField] private float _crouchTransitionSpeed = 10f;
 
         [Header("Ground Check")]
         [SerializeField] private Transform _groundCheck;
@@ -26,23 +32,39 @@ namespace VoxelRPG.Player
         private Vector3 _velocity;
         private bool _isGrounded;
         private bool _isSprinting;
+        private bool _isCrouching;
+        private float _targetHeight;
 
         private Vector2 _moveInput;
         private bool _jumpPressed;
 
         /// <summary>
-        /// Current movement speed accounting for sprint.
+        /// Current movement speed accounting for sprint and crouch.
         /// </summary>
-        public float CurrentSpeed => _isSprinting ? _moveSpeed * _sprintMultiplier : _moveSpeed;
+        public float CurrentSpeed
+        {
+            get
+            {
+                if (_isCrouching) return _moveSpeed * _crouchMultiplier;
+                if (_isSprinting) return _moveSpeed * _sprintMultiplier;
+                return _moveSpeed;
+            }
+        }
 
         /// <summary>
         /// Whether the player is currently on the ground.
         /// </summary>
         public bool IsGrounded => _isGrounded;
 
+        /// <summary>
+        /// Whether the player is currently crouching.
+        /// </summary>
+        public bool IsCrouching => _isCrouching;
+
         private void Awake()
         {
             _characterController = GetComponent<CharacterController>();
+            _targetHeight = _standingHeight;
 
             // Register with ServiceLocator
             ServiceLocator.Register<PlayerController>(this);
@@ -58,6 +80,7 @@ namespace VoxelRPG.Player
             CheckGround();
             HandleMovement();
             HandleGravityAndJump();
+            HandleCrouch();
         }
 
         private void CheckGround()
@@ -126,6 +149,40 @@ namespace VoxelRPG.Player
         public void OnSprint(InputAction.CallbackContext context)
         {
             _isSprinting = context.performed;
+        }
+
+        /// <summary>
+        /// Called by Input System for crouching.
+        /// </summary>
+        public void OnCrouch(InputAction.CallbackContext context)
+        {
+            if (context.started)
+            {
+                _isCrouching = true;
+                _targetHeight = _crouchingHeight;
+                Debug.Log("[PlayerController] Crouch started");
+            }
+            else if (context.canceled)
+            {
+                _isCrouching = false;
+                _targetHeight = _standingHeight;
+                Debug.Log("[PlayerController] Crouch ended");
+            }
+        }
+
+        private void HandleCrouch()
+        {
+            // Smoothly transition character controller height
+            if (Mathf.Abs(_characterController.height - _targetHeight) > 0.01f)
+            {
+                float newHeight = Mathf.Lerp(_characterController.height, _targetHeight, _crouchTransitionSpeed * Time.deltaTime);
+                float heightDiff = newHeight - _characterController.height;
+
+                _characterController.height = newHeight;
+                _characterController.center = new Vector3(0, newHeight / 2f, 0);
+
+                // Move camera down when crouching (handled by adjusting center)
+            }
         }
 
         /// <summary>
