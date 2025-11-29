@@ -34,17 +34,17 @@ namespace VoxelRPG.Voxel
                 new Vector3(0, 0, 1), new Vector3(0, 0, 0),
                 new Vector3(0, 1, 0), new Vector3(0, 1, 1)
             },
-            // +Y face (top) - vertices in CW order when viewed from +Y
+            // +Y face (top) - vertices in CW order when viewed from +Y (looking down)
             new[]
             {
-                new Vector3(0, 1, 0), new Vector3(1, 1, 0),
-                new Vector3(1, 1, 1), new Vector3(0, 1, 1)
+                new Vector3(0, 1, 1), new Vector3(1, 1, 1),
+                new Vector3(1, 1, 0), new Vector3(0, 1, 0)
             },
-            // -Y face (bottom) - vertices in CW order when viewed from -Y
+            // -Y face (bottom) - vertices in CW order when viewed from -Y (looking up)
             new[]
             {
-                new Vector3(0, 0, 1), new Vector3(1, 0, 1),
-                new Vector3(1, 0, 0), new Vector3(0, 0, 0)
+                new Vector3(0, 0, 0), new Vector3(1, 0, 0),
+                new Vector3(1, 0, 1), new Vector3(0, 0, 1)
             },
             // +Z face (front) - vertices in CW order when viewed from +Z
             new[]
