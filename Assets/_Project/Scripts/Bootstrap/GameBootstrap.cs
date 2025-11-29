@@ -288,6 +288,7 @@ namespace VoxelRPG.Bootstrap
             cameraObject.transform.SetParent(cameraHolder.transform);
             cameraObject.transform.localPosition = Vector3.zero;
             cameraObject.transform.localRotation = Quaternion.identity;
+            cameraObject.tag = "MainCamera"; // Required for Camera.main to work
 
             var camera = cameraObject.AddComponent<Camera>();
             camera.nearClipPlane = 0.1f;
