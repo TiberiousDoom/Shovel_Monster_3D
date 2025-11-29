@@ -294,12 +294,16 @@ namespace VoxelRPG.Bootstrap
                 if (playerActionMap != null)
                 {
                     playerActionMap.Enable();
-                    Debug.Log("[GameBootstrap] Player action map enabled.");
+                    Debug.Log($"[GameBootstrap] Player action map enabled. Actions: {playerActionMap.actions.Count}");
                 }
                 else
                 {
                     Debug.LogWarning("[GameBootstrap] Could not find 'Player' action map in input actions.");
                 }
+
+                // Also enable the entire asset to be safe
+                _inputActions.Enable();
+                Debug.Log("[GameBootstrap] Input actions asset enabled.");
             }
             else
             {
