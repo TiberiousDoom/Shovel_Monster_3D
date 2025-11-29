@@ -22,41 +22,41 @@ namespace VoxelRPG.Voxel
 
         private static readonly Vector3[][] FaceVertices =
         {
-            // +X face
+            // +X face (looking from +X towards origin, CCW)
             new[]
             {
-                new Vector3(1, 0, 0), new Vector3(1, 1, 0),
-                new Vector3(1, 1, 1), new Vector3(1, 0, 1)
+                new Vector3(1, 0, 1), new Vector3(1, 1, 1),
+                new Vector3(1, 1, 0), new Vector3(1, 0, 0)
             },
-            // -X face
+            // -X face (looking from -X towards origin, CCW)
             new[]
             {
-                new Vector3(0, 0, 1), new Vector3(0, 1, 1),
-                new Vector3(0, 1, 0), new Vector3(0, 0, 0)
+                new Vector3(0, 0, 0), new Vector3(0, 1, 0),
+                new Vector3(0, 1, 1), new Vector3(0, 0, 1)
             },
-            // +Y face
+            // +Y face (looking from +Y down, CCW)
             new[]
             {
                 new Vector3(0, 1, 0), new Vector3(0, 1, 1),
                 new Vector3(1, 1, 1), new Vector3(1, 1, 0)
             },
-            // -Y face
+            // -Y face (looking from -Y up, CCW)
             new[]
             {
-                new Vector3(0, 0, 1), new Vector3(0, 0, 0),
-                new Vector3(1, 0, 0), new Vector3(1, 0, 1)
+                new Vector3(0, 0, 0), new Vector3(1, 0, 0),
+                new Vector3(1, 0, 1), new Vector3(0, 0, 1)
             },
-            // +Z face
+            // +Z face (looking from +Z towards origin, CCW)
             new[]
             {
-                new Vector3(0, 0, 1), new Vector3(0, 1, 1),
-                new Vector3(1, 1, 1), new Vector3(1, 0, 1)
+                new Vector3(1, 0, 1), new Vector3(1, 1, 1),
+                new Vector3(0, 1, 1), new Vector3(0, 0, 1)
             },
-            // -Z face
+            // -Z face (looking from -Z towards origin, CCW)
             new[]
             {
-                new Vector3(1, 0, 0), new Vector3(1, 1, 0),
-                new Vector3(0, 1, 0), new Vector3(0, 0, 0)
+                new Vector3(0, 0, 0), new Vector3(0, 1, 0),
+                new Vector3(1, 1, 0), new Vector3(1, 0, 0)
             }
         };
 
@@ -191,14 +191,14 @@ namespace VoxelRPG.Voxel
             }
 
             // Add triangles (two triangles per face)
-            // Unity uses clockwise winding for front faces
+            // Winding order: 0-1-2, 0-2-3 for counter-clockwise front faces
             _triangles.Add(vertexStart);
-            _triangles.Add(vertexStart + 2);
             _triangles.Add(vertexStart + 1);
+            _triangles.Add(vertexStart + 2);
 
             _triangles.Add(vertexStart);
-            _triangles.Add(vertexStart + 3);
             _triangles.Add(vertexStart + 2);
+            _triangles.Add(vertexStart + 3);
         }
     }
 }
