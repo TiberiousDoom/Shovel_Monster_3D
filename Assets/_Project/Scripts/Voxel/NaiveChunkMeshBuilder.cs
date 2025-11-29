@@ -22,41 +22,41 @@ namespace VoxelRPG.Voxel
 
         private static readonly Vector3[][] FaceVertices =
         {
-            // +X face (right) - vertices in CW order when viewed from +X
+            // +X face (right) - looking from outside (+X direction) into block
             new[]
             {
-                new Vector3(1, 0, 0), new Vector3(1, 0, 1),
-                new Vector3(1, 1, 1), new Vector3(1, 1, 0)
+                new Vector3(1, 0, 1), new Vector3(1, 1, 1),
+                new Vector3(1, 1, 0), new Vector3(1, 0, 0)
             },
-            // -X face (left) - vertices in CW order when viewed from -X
+            // -X face (left) - looking from outside (-X direction) into block
             new[]
             {
-                new Vector3(0, 0, 1), new Vector3(0, 0, 0),
-                new Vector3(0, 1, 0), new Vector3(0, 1, 1)
+                new Vector3(0, 0, 0), new Vector3(0, 1, 0),
+                new Vector3(0, 1, 1), new Vector3(0, 0, 1)
             },
-            // +Y face (top) - vertices in CW order when viewed from +Y (looking down)
+            // +Y face (top) - looking from above down onto block
             new[]
             {
                 new Vector3(0, 1, 1), new Vector3(1, 1, 1),
                 new Vector3(1, 1, 0), new Vector3(0, 1, 0)
             },
-            // -Y face (bottom) - vertices in CW order when viewed from -Y (looking up)
+            // -Y face (bottom) - looking from below up at block
             new[]
             {
                 new Vector3(0, 0, 0), new Vector3(1, 0, 0),
                 new Vector3(1, 0, 1), new Vector3(0, 0, 1)
             },
-            // +Z face (front) - vertices in CW order when viewed from +Z
+            // +Z face (front) - looking from outside (+Z direction) into block
             new[]
             {
-                new Vector3(1, 0, 1), new Vector3(0, 0, 1),
-                new Vector3(0, 1, 1), new Vector3(1, 1, 1)
+                new Vector3(0, 0, 1), new Vector3(0, 1, 1),
+                new Vector3(1, 1, 1), new Vector3(1, 0, 1)
             },
-            // -Z face (back) - vertices in CW order when viewed from -Z
+            // -Z face (back) - looking from outside (-Z direction) into block
             new[]
             {
-                new Vector3(0, 0, 0), new Vector3(1, 0, 0),
-                new Vector3(1, 1, 0), new Vector3(0, 1, 0)
+                new Vector3(1, 0, 0), new Vector3(1, 1, 0),
+                new Vector3(0, 1, 0), new Vector3(0, 0, 0)
             }
         };
 
