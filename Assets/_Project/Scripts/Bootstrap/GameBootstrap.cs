@@ -288,6 +288,18 @@ namespace VoxelRPG.Bootstrap
                             break;
                     }
                 };
+
+                // Ensure the Player action map is enabled
+                var playerActionMap = playerInput.actions.FindActionMap("Player");
+                if (playerActionMap != null)
+                {
+                    playerActionMap.Enable();
+                    Debug.Log("[GameBootstrap] Player action map enabled.");
+                }
+                else
+                {
+                    Debug.LogWarning("[GameBootstrap] Could not find 'Player' action map in input actions.");
+                }
             }
             else
             {
