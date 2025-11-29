@@ -150,7 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: VoxelRPG.Bootstrap::VoxelRPG.Bootstrap.GameBootstrap
   _chunkMaterial: {fileID: 2100000, guid: 167776d7ae66f694bab39be014af84ee, type: 2}
   _useWorldGenerator: 1
-  _worldSeed: 0
+  _worldSeed: 1
   _defaultBiome: {fileID: 11400000, guid: b58cb62149dd1ca4bb7df8eaf96b0192, type: 2}
   _groundHeight: 4
   _groundBlock: {fileID: 11400000, guid: 2d929d7fb2e00f442b26fa11f8480cc7, type: 2}
