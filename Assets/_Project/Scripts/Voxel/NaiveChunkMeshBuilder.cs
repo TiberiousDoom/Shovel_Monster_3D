@@ -22,41 +22,41 @@ namespace VoxelRPG.Voxel
 
         private static readonly Vector3[][] FaceVertices =
         {
-            // +X face (looking from +X towards origin, CCW)
+            // +X face (right) - vertices in CW order when viewed from +X
             new[]
             {
-                new Vector3(1, 0, 1), new Vector3(1, 1, 1),
-                new Vector3(1, 1, 0), new Vector3(1, 0, 0)
-            },
-            // -X face (looking from -X towards origin, CCW)
-            new[]
-            {
-                new Vector3(0, 0, 0), new Vector3(0, 1, 0),
-                new Vector3(0, 1, 1), new Vector3(0, 0, 1)
-            },
-            // +Y face (looking from +Y down, CCW)
-            new[]
-            {
-                new Vector3(0, 1, 0), new Vector3(0, 1, 1),
+                new Vector3(1, 0, 0), new Vector3(1, 0, 1),
                 new Vector3(1, 1, 1), new Vector3(1, 1, 0)
             },
-            // -Y face (looking from -Y up, CCW)
+            // -X face (left) - vertices in CW order when viewed from -X
+            new[]
+            {
+                new Vector3(0, 0, 1), new Vector3(0, 0, 0),
+                new Vector3(0, 1, 0), new Vector3(0, 1, 1)
+            },
+            // +Y face (top) - vertices in CW order when viewed from +Y
+            new[]
+            {
+                new Vector3(0, 1, 0), new Vector3(1, 1, 0),
+                new Vector3(1, 1, 1), new Vector3(0, 1, 1)
+            },
+            // -Y face (bottom) - vertices in CW order when viewed from -Y
+            new[]
+            {
+                new Vector3(0, 0, 1), new Vector3(1, 0, 1),
+                new Vector3(1, 0, 0), new Vector3(0, 0, 0)
+            },
+            // +Z face (front) - vertices in CW order when viewed from +Z
+            new[]
+            {
+                new Vector3(1, 0, 1), new Vector3(0, 0, 1),
+                new Vector3(0, 1, 1), new Vector3(1, 1, 1)
+            },
+            // -Z face (back) - vertices in CW order when viewed from -Z
             new[]
             {
                 new Vector3(0, 0, 0), new Vector3(1, 0, 0),
-                new Vector3(1, 0, 1), new Vector3(0, 0, 1)
-            },
-            // +Z face (looking from +Z towards origin, CCW)
-            new[]
-            {
-                new Vector3(1, 0, 1), new Vector3(1, 1, 1),
-                new Vector3(0, 1, 1), new Vector3(0, 0, 1)
-            },
-            // -Z face (looking from -Z towards origin, CCW)
-            new[]
-            {
-                new Vector3(0, 0, 0), new Vector3(0, 1, 0),
-                new Vector3(1, 1, 0), new Vector3(1, 0, 0)
+                new Vector3(1, 1, 0), new Vector3(0, 1, 0)
             }
         };
 
@@ -191,14 +191,14 @@ namespace VoxelRPG.Voxel
             }
 
             // Add triangles (two triangles per face)
-            // Unity uses clockwise winding for front faces
+            // Vertices are in CW order, triangles: 0-1-2, 0-2-3
             _triangles.Add(vertexStart);
-            _triangles.Add(vertexStart + 2);
             _triangles.Add(vertexStart + 1);
+            _triangles.Add(vertexStart + 2);
 
             _triangles.Add(vertexStart);
-            _triangles.Add(vertexStart + 3);
             _triangles.Add(vertexStart + 2);
+            _triangles.Add(vertexStart + 3);
         }
     }
 }
