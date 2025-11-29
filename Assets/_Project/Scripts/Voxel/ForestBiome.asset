@@ -32,3 +32,19 @@ MonoBehaviour:
     LeafRadius: 3
   _waterLevel: 20
   _beachHeight: 2
+  _oreConfigs:
+  - OreBlock: {fileID: 11400000, guid: c0a10re000000000000000000000001, type: 2}
+    MinDepth: 3
+    MaxDepth: 40
+    SpawnChance: 0.08
+    NoiseScale: 0.15
+  - OreBlock: {fileID: 11400000, guid: 1r0n0re000000000000000000000001, type: 2}
+    MinDepth: 8
+    MaxDepth: 50
+    SpawnChance: 0.05
+    NoiseScale: 0.12
+  - OreBlock: {fileID: 11400000, guid: 60ld0re000000000000000000000001, type: 2}
+    MinDepth: 15
+    MaxDepth: 60
+    SpawnChance: 0.02
+    NoiseScale: 0.1

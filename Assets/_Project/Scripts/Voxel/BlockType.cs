@@ -60,12 +60,12 @@ namespace VoxelRPG.Voxel
         /// <summary>
         /// Whether the block is solid (has collision).
         /// </summary>
-        public bool IsSolid => _isSolid;
+        public virtual bool IsSolid => _isSolid;
 
         /// <summary>
         /// Whether light passes through this block.
         /// </summary>
-        public bool IsTransparent => _isTransparent;
+        public virtual bool IsTransparent => _isTransparent;
 
         /// <summary>
         /// Mining time multiplier.
