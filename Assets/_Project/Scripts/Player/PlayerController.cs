@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using VoxelRPG.Core;
+using VoxelRPG.Voxel;
 
 namespace VoxelRPG.Player
 {
@@ -21,6 +22,9 @@ namespace VoxelRPG.Player
         [Header("Debug")]
         [Tooltip("Disable gravity for testing (fly mode)")]
         [SerializeField] private bool _disableGravity = true;
+
+        [Tooltip("Automatically clear a 3x3x3 area around player while flying (for exploring underground)")]
+        [SerializeField] private bool _autoClearBlocks = false;
 
         [Header("Crouch Settings")]
         [SerializeField] private float _standingHeight = 1.8f;
@@ -93,6 +97,11 @@ namespace VoxelRPG.Player
             HandleMovement();
             HandleGravityAndJump();
             HandleCrouch();
+
+            if (_autoClearBlocks)
+            {
+                ClearBlocksAroundPlayer();
+            }
         }
 
         private void CheckGround()
@@ -252,6 +261,52 @@ namespace VoxelRPG.Player
         public void SetCameraHolder(Transform cameraHolder)
         {
             _cameraHolder = cameraHolder;
+        }
+
+        /// <summary>
+        /// Debug: Clears a 3x3x3 area of blocks around the player for exploring underground.
+        /// </summary>
+        private void ClearBlocksAroundPlayer()
+        {
+            var world = ServiceLocator.Get<IVoxelWorld>();
+            if (world == null) return;
+
+            // Get player's block position (at feet level)
+            var playerBlockPos = new Vector3Int(
+                Mathf.FloorToInt(transform.position.x),
+                Mathf.FloorToInt(transform.position.y),
+                Mathf.FloorToInt(transform.position.z)
+            );
+
+            bool anyCleared = false;
+
+            // Clear 3x3x3 around player
+            for (int x = -1; x <= 1; x++)
+            {
+                for (int y = -1; y <= 1; y++)
+                {
+                    for (int z = -1; z <= 1; z++)
+                    {
+                        var pos = playerBlockPos + new Vector3Int(x, y, z);
+
+                        if (world.IsPositionValid(pos))
+                        {
+                            var block = world.GetBlock(pos);
+                            if (block != null && block.IsSolid)
+                            {
+                                world.RequestBlockChange(pos, BlockType.Air);
+                                anyCleared = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Rebuild dirty chunks if any blocks were cleared
+            if (anyCleared && world is VoxelWorld voxelWorld)
+            {
+                voxelWorld.RebuildDirtyChunks();
+            }
         }
     }
 }
