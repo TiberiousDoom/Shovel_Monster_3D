@@ -219,13 +219,35 @@ namespace VoxelRPG.Bootstrap
                     terrainHeight = _groundHeight;
                 }
 
-                // Spawn player 2 blocks above terrain surface
-                spawnPos.y = terrainHeight + 2f;
-
-                // Clear area around spawn point to avoid spawning inside trees
+                // Clear area around spawn point FIRST, before calculating final spawn height
                 ClearSpawnArea(spawnX, terrainHeight, spawnZ);
 
-                Debug.Log($"[GameBootstrap] Auto spawn height: terrain={terrainHeight}, spawn Y={spawnPos.y}");
+                // Find the actual surface height by scanning upward from terrain
+                // This accounts for any blocks that weren't cleared
+                var world = FindFirstObjectByType<VoxelWorld>();
+                int actualSurface = terrainHeight;
+                if (world != null)
+                {
+                    // Scan upward to find the highest solid block
+                    for (int y = terrainHeight; y < terrainHeight + 20; y++)
+                    {
+                        var block = world.GetBlock(new Vector3Int(spawnX, y, spawnZ));
+                        if (block != null && block.IsSolid)
+                        {
+                            actualSurface = y;
+                        }
+                        else
+                        {
+                            // Found air, stop scanning
+                            break;
+                        }
+                    }
+                }
+
+                // Spawn player 2 blocks above the actual surface
+                spawnPos.y = actualSurface + 2f;
+
+                Debug.Log($"[GameBootstrap] Auto spawn height: terrain={terrainHeight}, actualSurface={actualSurface}, spawn Y={spawnPos.y}");
             }
 
             return spawnPos;
@@ -236,12 +258,15 @@ namespace VoxelRPG.Bootstrap
             var world = FindFirstObjectByType<VoxelWorld>();
             if (world == null) return;
 
-            // Clear a 3x3x4 area above the ground (player is about 2 blocks tall)
-            for (int x = centerX - 1; x <= centerX + 1; x++)
+            // Clear a 5x5x10 area above the ground (trees can be up to 8 blocks tall with leaves)
+            int clearRadius = 2;
+            int clearHeight = 10;
+
+            for (int x = centerX - clearRadius; x <= centerX + clearRadius; x++)
             {
-                for (int z = centerZ - 1; z <= centerZ + 1; z++)
+                for (int z = centerZ - clearRadius; z <= centerZ + clearRadius; z++)
                 {
-                    for (int y = groundY + 1; y <= groundY + 4; y++)
+                    for (int y = groundY + 1; y <= groundY + clearHeight; y++)
                     {
                         var pos = new Vector3Int(x, y, z);
                         if (world.IsPositionValid(pos))
@@ -259,7 +284,7 @@ namespace VoxelRPG.Bootstrap
             }
 
             world.RebuildDirtyChunks();
-            Debug.Log($"[GameBootstrap] Cleared spawn area around ({centerX}, {groundY}, {centerZ})");
+            Debug.Log($"[GameBootstrap] Cleared spawn area around ({centerX}, {groundY}, {centerZ}), radius={clearRadius}, height={clearHeight}");
         }
 
         private void CreateDefaultPlayer(Vector3 spawnPosition)
