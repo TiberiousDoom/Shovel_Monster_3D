@@ -191,13 +191,14 @@ namespace VoxelRPG.Voxel
             }
 
             // Add triangles (two triangles per face)
+            // Unity uses clockwise winding for front faces
             _triangles.Add(vertexStart);
-            _triangles.Add(vertexStart + 1);
             _triangles.Add(vertexStart + 2);
+            _triangles.Add(vertexStart + 1);
 
             _triangles.Add(vertexStart);
-            _triangles.Add(vertexStart + 2);
             _triangles.Add(vertexStart + 3);
+            _triangles.Add(vertexStart + 2);
         }
     }
 }
