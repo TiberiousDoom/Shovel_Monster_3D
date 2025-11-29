@@ -4,6 +4,23 @@ using UnityEngine;
 namespace VoxelRPG.Voxel
 {
     /// <summary>
+    /// A virtual block type that acts as solid for mesh generation purposes.
+    /// Used to prevent rendering faces at world boundaries.
+    /// </summary>
+    internal class VirtualSolidBlockType : BlockType
+    {
+        /// <summary>
+        /// Always returns true - this virtual block is treated as solid.
+        /// </summary>
+        public override bool IsSolid => true;
+
+        /// <summary>
+        /// Always returns false - this virtual block is opaque.
+        /// </summary>
+        public override bool IsTransparent => false;
+    }
+
+    /// <summary>
     /// Simple mesh builder that creates visible faces for each solid block.
     /// Only renders faces adjacent to transparent/air blocks.
     /// Phase 0A implementation - will be replaced with greedy meshing in Phase 0B.
@@ -155,12 +172,32 @@ namespace VoxelRPG.Voxel
             if (chunk.World != null)
             {
                 var worldPos = chunk.WorldOrigin + localPos;
+
+                // Check if position is outside world bounds
+                if (!chunk.World.IsPositionValid(worldPos))
+                {
+                    // Return a "virtual solid" for positions outside world bounds
+                    // This prevents interior faces from rendering at world edges
+                    // Only treat as solid if below the surface (Y < world height - some buffer)
+                    // Above world or at horizontal edges, treat as air
+                    if (worldPos.y < 0)
+                    {
+                        // Below world - treat as solid (don't render bottom faces)
+                        return _virtualSolidBlock;
+                    }
+                    // At horizontal world edges or above - treat as air
+                    return BlockType.Air;
+                }
+
                 return chunk.World.GetBlock(worldPos);
             }
 
             // No world reference, assume air at chunk boundaries
             return BlockType.Air;
         }
+
+        // Virtual solid block used to prevent rendering interior faces at world boundaries
+        private static readonly VirtualSolidBlockType _virtualSolidBlock = new VirtualSolidBlockType();
 
         private void AddFace(Vector3 blockPos, int faceIndex, Color color)
         {
