@@ -20,43 +20,51 @@ namespace VoxelRPG.Voxel
             Vector3Int.back     // -Z
         };
 
+        // Face vertices in CLOCKWISE order when viewed from OUTSIDE the block
+        // This ensures proper front-face rendering with Unity's backface culling
         private static readonly Vector3[][] FaceVertices =
         {
-            // +X face (right) - looking from outside (+X direction) into block
+            // +X face (right) - viewer at +X looking toward -X
+            // CW from outside: bottom-right → top-right → top-left → bottom-left
             new[]
             {
-                new Vector3(1, 0, 1), new Vector3(1, 1, 1),
-                new Vector3(1, 1, 0), new Vector3(1, 0, 0)
+                new Vector3(1, 0, 0), new Vector3(1, 1, 0),
+                new Vector3(1, 1, 1), new Vector3(1, 0, 1)
             },
-            // -X face (left) - looking from outside (-X direction) into block
+            // -X face (left) - viewer at -X looking toward +X
+            // CW from outside: bottom-left → top-left → top-right → bottom-right
             new[]
             {
-                new Vector3(0, 0, 0), new Vector3(0, 1, 0),
-                new Vector3(0, 1, 1), new Vector3(0, 0, 1)
+                new Vector3(0, 0, 1), new Vector3(0, 1, 1),
+                new Vector3(0, 1, 0), new Vector3(0, 0, 0)
             },
-            // +Y face (top) - looking from above down onto block
+            // +Y face (top) - viewer above looking down
+            // CW from outside: front-left → front-right → back-right → back-left
             new[]
             {
                 new Vector3(0, 1, 1), new Vector3(1, 1, 1),
                 new Vector3(1, 1, 0), new Vector3(0, 1, 0)
             },
-            // -Y face (bottom) - looking from below up at block
+            // -Y face (bottom) - viewer below looking up
+            // CW from outside: front-left → back-left → back-right → front-right
             new[]
             {
-                new Vector3(0, 0, 0), new Vector3(1, 0, 0),
-                new Vector3(1, 0, 1), new Vector3(0, 0, 1)
+                new Vector3(0, 0, 1), new Vector3(0, 0, 0),
+                new Vector3(1, 0, 0), new Vector3(1, 0, 1)
             },
-            // +Z face (front) - looking from outside (+Z direction) into block
+            // +Z face (front) - viewer at +Z looking toward -Z
+            // CW from outside: bottom-left → top-left → top-right → bottom-right
             new[]
             {
-                new Vector3(0, 0, 1), new Vector3(0, 1, 1),
-                new Vector3(1, 1, 1), new Vector3(1, 0, 1)
+                new Vector3(1, 0, 1), new Vector3(1, 1, 1),
+                new Vector3(0, 1, 1), new Vector3(0, 0, 1)
             },
-            // -Z face (back) - looking from outside (-Z direction) into block
+            // -Z face (back) - viewer at -Z looking toward +Z
+            // CW from outside: bottom-right → top-right → top-left → bottom-left
             new[]
             {
-                new Vector3(1, 0, 0), new Vector3(1, 1, 0),
-                new Vector3(0, 1, 0), new Vector3(0, 0, 0)
+                new Vector3(0, 0, 0), new Vector3(0, 1, 0),
+                new Vector3(1, 1, 0), new Vector3(1, 0, 0)
             }
         };
 
@@ -197,7 +205,7 @@ namespace VoxelRPG.Voxel
             }
 
             // Add triangles (two triangles per face)
-            // Vertices are in CW order, triangles: 0-1-2, 0-2-3
+            // Vertices are in CW order when viewed from outside, triangles: 0-1-2, 0-2-3
             _triangles.Add(vertexStart);
             _triangles.Add(vertexStart + 1);
             _triangles.Add(vertexStart + 2);
