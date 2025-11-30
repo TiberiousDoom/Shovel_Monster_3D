@@ -64,6 +64,11 @@ namespace VoxelRPG.Building
         public bool IsQueueFull => _queue.Count >= _maxQueueSize;
 
         /// <summary>
+        /// Whether a player is currently interacting with this station.
+        /// </summary>
+        public bool IsPlayerNearby => _isPlayerNearby;
+
+        /// <summary>
         /// Available recipes for this station.
         /// </summary>
         public IEnumerable<Recipe> AvailableRecipes

@@ -5,7 +5,8 @@
         "VoxelRPG.Core",
         "VoxelRPG.Utilities",
         "VoxelRPG.Player",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

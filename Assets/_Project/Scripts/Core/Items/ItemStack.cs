@@ -31,6 +31,11 @@ namespace VoxelRPG.Core.Items
         }
 
         /// <summary>
+        /// Alias for Amount for API consistency.
+        /// </summary>
+        public int Quantity => Amount;
+
+        /// <summary>
         /// Whether this stack is empty (no item or zero amount).
         /// </summary>
         public bool IsEmpty => Item == null || Amount <= 0;
@@ -68,6 +73,32 @@ namespace VoxelRPG.Core.Items
         public ItemStack AddAmount(int delta)
         {
             return new ItemStack(Item, Amount + delta);
+        }
+
+        /// <summary>
+        /// Creates a copy with increased quantity.
+        /// </summary>
+        public ItemStack AddQuantity(int qty)
+        {
+            return new ItemStack(Item, Amount + qty);
+        }
+
+        /// <summary>
+        /// Creates a copy with decreased quantity.
+        /// </summary>
+        public ItemStack RemoveQuantity(int qty)
+        {
+            int newAmount = Amount - qty;
+            return newAmount <= 0 ? Empty : new ItemStack(Item, newAmount);
+        }
+
+        /// <summary>
+        /// Checks if this stack can accept additional items.
+        /// </summary>
+        public bool CanStack(int additionalAmount)
+        {
+            if (Item == null) return true;
+            return Item.IsStackable && (Amount + additionalAmount) <= Item.MaxStackSize;
         }
 
         /// <summary>

@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using VoxelRPG.Core;
+using VoxelRPG.Core.Items;
 
 namespace VoxelRPG.UI
 {

@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using TMPro;
 using VoxelRPG.Core;
 using VoxelRPG.Core.Crafting;
+using VoxelRPG.Core.Items;
 using VoxelRPG.Player;
 
 namespace VoxelRPG.UI
