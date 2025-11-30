@@ -1,0 +1,630 @@
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using VoxelRPG.Core;
+using VoxelRPG.Player;
+
+namespace VoxelRPG.UI
+{
+    /// <summary>
+    /// Creates the game UI programmatically at runtime.
+    /// Generates all screens (HUD, Pause, Inventory, Crafting, Death) with simple styling.
+    /// </summary>
+    public class RuntimeUIBuilder : MonoBehaviour
+    {
+        [Header("Colors")]
+        [SerializeField] private Color _panelColor = new Color(0.1f, 0.1f, 0.1f, 0.9f);
+        [SerializeField] private Color _healthColor = new Color(0.2f, 0.8f, 0.2f);
+        [SerializeField] private Color _hungerColor = new Color(0.9f, 0.6f, 0.2f);
+        [SerializeField] private Color _buttonColor = new Color(0.3f, 0.3f, 0.3f, 1f);
+        [SerializeField] private Color _buttonHoverColor = new Color(0.4f, 0.4f, 0.4f, 1f);
+        [SerializeField] private Color _slotColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+        [SerializeField] private Color _slotSelectedColor = new Color(0.8f, 0.8f, 0.2f, 1f);
+
+        private Canvas _canvas;
+        private GameObject _hudScreen;
+        private GameObject _pauseScreen;
+        private GameObject _inventoryScreen;
+        private GameObject _craftingScreen;
+        private GameObject _deathScreen;
+
+        // HUD references
+        private Slider _healthSlider;
+        private Slider _hungerSlider;
+        private TextMeshProUGUI _healthText;
+        private TextMeshProUGUI _hungerText;
+        private TextMeshProUGUI _timeText;
+        private TextMeshProUGUI _dayText;
+        private HotbarSlotUI[] _hotbarSlots;
+
+        public void BuildUI()
+        {
+            CreateCanvas();
+            CreateHUDScreen();
+            CreatePauseScreen();
+            CreateInventoryScreen();
+            CreateCraftingScreen();
+            CreateDeathScreen();
+            WireUIManager();
+
+            Debug.Log("[RuntimeUIBuilder] UI created successfully.");
+        }
+
+        private void CreateCanvas()
+        {
+            var canvasObject = new GameObject("GameUI");
+            _canvas = canvasObject.AddComponent<Canvas>();
+            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _canvas.sortingOrder = 100;
+
+            var scaler = canvasObject.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            canvasObject.AddComponent<GraphicRaycaster>();
+        }
+
+        private void CreateHUDScreen()
+        {
+            _hudScreen = CreateScreen("HUDScreen");
+
+            // Health bar (top left)
+            var healthContainer = CreatePanel(_hudScreen.transform, "HealthContainer",
+                new Vector2(0, 1), new Vector2(0, 1),
+                new Vector2(20, -20), new Vector2(250, 30));
+
+            _healthSlider = CreateSlider(healthContainer.transform, "HealthSlider", _healthColor);
+            _healthText = CreateText(healthContainer.transform, "HealthText", "100/100",
+                TextAlignmentOptions.Center, 16);
+            _healthText.rectTransform.anchorMin = Vector2.zero;
+            _healthText.rectTransform.anchorMax = Vector2.one;
+            _healthText.rectTransform.offsetMin = Vector2.zero;
+            _healthText.rectTransform.offsetMax = Vector2.zero;
+
+            // Hunger bar (below health)
+            var hungerContainer = CreatePanel(_hudScreen.transform, "HungerContainer",
+                new Vector2(0, 1), new Vector2(0, 1),
+                new Vector2(20, -60), new Vector2(250, 30));
+
+            _hungerSlider = CreateSlider(hungerContainer.transform, "HungerSlider", _hungerColor);
+            _hungerText = CreateText(hungerContainer.transform, "HungerText", "100/100",
+                TextAlignmentOptions.Center, 16);
+            _hungerText.rectTransform.anchorMin = Vector2.zero;
+            _hungerText.rectTransform.anchorMax = Vector2.one;
+            _hungerText.rectTransform.offsetMin = Vector2.zero;
+            _hungerText.rectTransform.offsetMax = Vector2.zero;
+
+            // Time display (top right)
+            var timeContainer = CreatePanel(_hudScreen.transform, "TimeContainer",
+                new Vector2(1, 1), new Vector2(1, 1),
+                new Vector2(-20, -20), new Vector2(150, 50));
+            timeContainer.GetComponent<Image>().color = _panelColor;
+
+            _dayText = CreateText(timeContainer.transform, "DayText", "Day 1",
+                TextAlignmentOptions.Center, 18);
+            _dayText.rectTransform.anchorMin = new Vector2(0, 0.5f);
+            _dayText.rectTransform.anchorMax = new Vector2(1, 1);
+            _dayText.rectTransform.offsetMin = new Vector2(5, 0);
+            _dayText.rectTransform.offsetMax = new Vector2(-5, -5);
+
+            _timeText = CreateText(timeContainer.transform, "TimeText", "06:00",
+                TextAlignmentOptions.Center, 24);
+            _timeText.rectTransform.anchorMin = new Vector2(0, 0);
+            _timeText.rectTransform.anchorMax = new Vector2(1, 0.5f);
+            _timeText.rectTransform.offsetMin = new Vector2(5, 5);
+            _timeText.rectTransform.offsetMax = new Vector2(-5, 0);
+
+            // Hotbar (bottom center)
+            var hotbarContainer = CreatePanel(_hudScreen.transform, "HotbarContainer",
+                new Vector2(0.5f, 0), new Vector2(0.5f, 0),
+                new Vector2(0, 20), new Vector2(468, 52));
+            hotbarContainer.GetComponent<Image>().color = _panelColor;
+
+            var hotbarLayout = hotbarContainer.AddComponent<HorizontalLayoutGroup>();
+            hotbarLayout.spacing = 4;
+            hotbarLayout.padding = new RectOffset(2, 2, 2, 2);
+            hotbarLayout.childAlignment = TextAnchor.MiddleCenter;
+            hotbarLayout.childControlWidth = false;
+            hotbarLayout.childControlHeight = false;
+            hotbarLayout.childForceExpandWidth = false;
+            hotbarLayout.childForceExpandHeight = false;
+
+            _hotbarSlots = new HotbarSlotUI[9];
+            for (int i = 0; i < 9; i++)
+            {
+                var slot = CreateHotbarSlot(hotbarContainer.transform, i);
+                _hotbarSlots[i] = slot;
+            }
+
+            // Add HUDController
+            var hudController = _hudScreen.AddComponent<HUDController>();
+            SetPrivateField(hudController, "_healthSlider", _healthSlider);
+            SetPrivateField(hudController, "_healthText", _healthText);
+            SetPrivateField(hudController, "_hungerSlider", _hungerSlider);
+            SetPrivateField(hudController, "_hungerText", _hungerText);
+            SetPrivateField(hudController, "_timeText", _timeText);
+            SetPrivateField(hudController, "_dayText", _dayText);
+            SetPrivateField(hudController, "_hotbarSlots", _hotbarSlots);
+        }
+
+        private void CreatePauseScreen()
+        {
+            _pauseScreen = CreateScreen("PauseScreen");
+            _pauseScreen.SetActive(false);
+
+            // Dark overlay
+            var overlay = _pauseScreen.AddComponent<Image>();
+            overlay.color = new Color(0, 0, 0, 0.7f);
+
+            // Center panel
+            var panel = CreatePanel(_pauseScreen.transform, "PausePanel",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(300, 250));
+            panel.GetComponent<Image>().color = _panelColor;
+
+            var panelLayout = panel.AddComponent<VerticalLayoutGroup>();
+            panelLayout.spacing = 15;
+            panelLayout.padding = new RectOffset(20, 20, 30, 20);
+            panelLayout.childAlignment = TextAnchor.UpperCenter;
+            panelLayout.childControlWidth = true;
+            panelLayout.childControlHeight = false;
+            panelLayout.childForceExpandWidth = true;
+            panelLayout.childForceExpandHeight = false;
+
+            // Title
+            var title = CreateText(panel.transform, "Title", "PAUSED",
+                TextAlignmentOptions.Center, 32);
+            title.gameObject.AddComponent<LayoutElement>().preferredHeight = 50;
+
+            // Resume button
+            var resumeBtn = CreateButton(panel.transform, "ResumeButton", "Resume", 40);
+
+            // Quit button
+            var quitBtn = CreateButton(panel.transform, "QuitButton", "Quit", 40);
+
+            // Add PauseMenu component
+            var pauseMenu = _pauseScreen.AddComponent<PauseMenu>();
+            SetPrivateField(pauseMenu, "_resumeButton", resumeBtn);
+            SetPrivateField(pauseMenu, "_quitButton", quitBtn);
+        }
+
+        private void CreateInventoryScreen()
+        {
+            _inventoryScreen = CreateScreen("InventoryScreen");
+            _inventoryScreen.SetActive(false);
+
+            // Semi-transparent overlay
+            var overlay = _inventoryScreen.AddComponent<Image>();
+            overlay.color = new Color(0, 0, 0, 0.5f);
+
+            // Center panel
+            var panel = CreatePanel(_inventoryScreen.transform, "InventoryPanel",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(400, 350));
+            panel.GetComponent<Image>().color = _panelColor;
+
+            // Title
+            var title = CreateText(panel.transform, "Title", "INVENTORY",
+                TextAlignmentOptions.Center, 24);
+            title.rectTransform.anchorMin = new Vector2(0, 1);
+            title.rectTransform.anchorMax = new Vector2(1, 1);
+            title.rectTransform.pivot = new Vector2(0.5f, 1);
+            title.rectTransform.anchoredPosition = new Vector2(0, -10);
+            title.rectTransform.sizeDelta = new Vector2(0, 40);
+
+            // Grid container
+            var gridContainer = CreatePanel(panel.transform, "GridContainer",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, -20), new Vector2(360, 260));
+            gridContainer.GetComponent<Image>().color = Color.clear;
+
+            var grid = gridContainer.AddComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(48, 48);
+            grid.spacing = new Vector2(4, 4);
+            grid.padding = new RectOffset(5, 5, 5, 5);
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = 7;
+
+            // Create 28 inventory slots (7 columns x 4 rows)
+            var inventorySlots = new InventorySlotUI[28];
+            for (int i = 0; i < 28; i++)
+            {
+                var slot = CreateInventorySlot(gridContainer.transform, i);
+                inventorySlots[i] = slot;
+            }
+
+            // Add InventoryUI component
+            var inventoryUI = _inventoryScreen.AddComponent<InventoryUI>();
+            SetPrivateField(inventoryUI, "_preCreatedSlots", inventorySlots);
+        }
+
+        private void CreateCraftingScreen()
+        {
+            _craftingScreen = CreateScreen("CraftingScreen");
+            _craftingScreen.SetActive(false);
+
+            // Semi-transparent overlay
+            var overlay = _craftingScreen.AddComponent<Image>();
+            overlay.color = new Color(0, 0, 0, 0.5f);
+
+            // Center panel
+            var panel = CreatePanel(_craftingScreen.transform, "CraftingPanel",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(350, 400));
+            panel.GetComponent<Image>().color = _panelColor;
+
+            // Title
+            var title = CreateText(panel.transform, "Title", "CRAFTING",
+                TextAlignmentOptions.Center, 24);
+            title.rectTransform.anchorMin = new Vector2(0, 1);
+            title.rectTransform.anchorMax = new Vector2(1, 1);
+            title.rectTransform.pivot = new Vector2(0.5f, 1);
+            title.rectTransform.anchoredPosition = new Vector2(0, -10);
+            title.rectTransform.sizeDelta = new Vector2(0, 40);
+
+            // Recipe list area
+            var listArea = CreatePanel(panel.transform, "RecipeList",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, 10), new Vector2(310, 280));
+            listArea.GetComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
+
+            var infoText = CreateText(listArea.transform, "InfoText", "Recipes will appear here\nwhen items are available",
+                TextAlignmentOptions.Center, 16);
+            infoText.rectTransform.anchorMin = Vector2.zero;
+            infoText.rectTransform.anchorMax = Vector2.one;
+            infoText.rectTransform.offsetMin = Vector2.zero;
+            infoText.rectTransform.offsetMax = Vector2.zero;
+            infoText.color = new Color(0.6f, 0.6f, 0.6f);
+
+            // Craft button
+            var craftBtn = CreateButton(panel.transform, "CraftButton", "Craft", 40);
+            craftBtn.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 0);
+            craftBtn.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 0);
+            craftBtn.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0);
+            craftBtn.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 20);
+            craftBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(200, 40);
+
+            // Add CraftingUI component
+            var craftingUI = _craftingScreen.AddComponent<CraftingUI>();
+        }
+
+        private void CreateDeathScreen()
+        {
+            _deathScreen = CreateScreen("DeathScreen");
+            _deathScreen.SetActive(false);
+
+            // Red-tinted overlay
+            var overlay = _deathScreen.AddComponent<Image>();
+            overlay.color = new Color(0.3f, 0, 0, 0.8f);
+
+            // Center panel
+            var panel = CreatePanel(_deathScreen.transform, "DeathPanel",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(300, 200));
+            panel.GetComponent<Image>().color = Color.clear;
+
+            var panelLayout = panel.AddComponent<VerticalLayoutGroup>();
+            panelLayout.spacing = 30;
+            panelLayout.childAlignment = TextAnchor.MiddleCenter;
+            panelLayout.childControlWidth = true;
+            panelLayout.childControlHeight = false;
+            panelLayout.childForceExpandWidth = true;
+            panelLayout.childForceExpandHeight = false;
+
+            // Title
+            var title = CreateText(panel.transform, "Title", "YOU DIED",
+                TextAlignmentOptions.Center, 48);
+            title.color = Color.red;
+            title.gameObject.AddComponent<LayoutElement>().preferredHeight = 60;
+
+            // Respawn button
+            var respawnBtn = CreateButton(panel.transform, "RespawnButton", "Respawn", 50);
+            respawnBtn.GetComponent<LayoutElement>().preferredWidth = 200;
+
+            // Wire respawn button to DeathHandler
+            respawnBtn.onClick.AddListener(() =>
+            {
+                if (ServiceLocator.TryGet<DeathHandler>(out var deathHandler))
+                {
+                    deathHandler.ForceRespawn();
+                }
+                if (ServiceLocator.TryGet<UIManager>(out var uiManager))
+                {
+                    uiManager.ReturnToGameplay();
+                }
+            });
+        }
+
+        private void WireUIManager()
+        {
+            var uiManager = _canvas.gameObject.AddComponent<UIManager>();
+
+            SetPrivateField(uiManager, "_hudScreen", _hudScreen);
+            SetPrivateField(uiManager, "_pauseScreen", _pauseScreen);
+            SetPrivateField(uiManager, "_inventoryScreen", _inventoryScreen);
+            SetPrivateField(uiManager, "_craftingScreen", _craftingScreen);
+            SetPrivateField(uiManager, "_deathScreen", _deathScreen);
+        }
+
+        #region Helper Methods
+
+        private GameObject CreateScreen(string name)
+        {
+            var screen = new GameObject(name);
+            screen.transform.SetParent(_canvas.transform, false);
+
+            var rect = screen.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            return screen;
+        }
+
+        private GameObject CreatePanel(Transform parent, string name,
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition, Vector2 sizeDelta)
+        {
+            var panel = new GameObject(name);
+            panel.transform.SetParent(parent, false);
+
+            var rect = panel.AddComponent<RectTransform>();
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.pivot = anchorMin;
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = sizeDelta;
+
+            var image = panel.AddComponent<Image>();
+            image.color = Color.clear;
+
+            return panel;
+        }
+
+        private Slider CreateSlider(Transform parent, string name, Color fillColor)
+        {
+            var sliderObj = new GameObject(name);
+            sliderObj.transform.SetParent(parent, false);
+
+            var rect = sliderObj.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var slider = sliderObj.AddComponent<Slider>();
+            slider.interactable = false;
+            slider.transition = Selectable.Transition.None;
+
+            // Background
+            var bg = new GameObject("Background");
+            bg.transform.SetParent(sliderObj.transform, false);
+            var bgRect = bg.AddComponent<RectTransform>();
+            bgRect.anchorMin = Vector2.zero;
+            bgRect.anchorMax = Vector2.one;
+            bgRect.offsetMin = Vector2.zero;
+            bgRect.offsetMax = Vector2.zero;
+            var bgImage = bg.AddComponent<Image>();
+            bgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+
+            // Fill area
+            var fillArea = new GameObject("Fill Area");
+            fillArea.transform.SetParent(sliderObj.transform, false);
+            var fillAreaRect = fillArea.AddComponent<RectTransform>();
+            fillAreaRect.anchorMin = Vector2.zero;
+            fillAreaRect.anchorMax = Vector2.one;
+            fillAreaRect.offsetMin = new Vector2(2, 2);
+            fillAreaRect.offsetMax = new Vector2(-2, -2);
+
+            // Fill
+            var fill = new GameObject("Fill");
+            fill.transform.SetParent(fillArea.transform, false);
+            var fillRect = fill.AddComponent<RectTransform>();
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+            var fillImage = fill.AddComponent<Image>();
+            fillImage.color = fillColor;
+
+            slider.fillRect = fillRect;
+            slider.value = 1f;
+
+            return slider;
+        }
+
+        private TextMeshProUGUI CreateText(Transform parent, string name, string text,
+            TextAlignmentOptions alignment, float fontSize)
+        {
+            var textObj = new GameObject(name);
+            textObj.transform.SetParent(parent, false);
+
+            var rect = textObj.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var tmp = textObj.AddComponent<TextMeshProUGUI>();
+            tmp.text = text;
+            tmp.fontSize = fontSize;
+            tmp.alignment = alignment;
+            tmp.color = Color.white;
+
+            return tmp;
+        }
+
+        private Button CreateButton(Transform parent, string name, string text, float height)
+        {
+            var btnObj = new GameObject(name);
+            btnObj.transform.SetParent(parent, false);
+
+            var rect = btnObj.AddComponent<RectTransform>();
+            var layout = btnObj.AddComponent<LayoutElement>();
+            layout.preferredHeight = height;
+
+            var image = btnObj.AddComponent<Image>();
+            image.color = _buttonColor;
+
+            var btn = btnObj.AddComponent<Button>();
+            btn.targetGraphic = image;
+
+            var colors = btn.colors;
+            colors.normalColor = _buttonColor;
+            colors.highlightedColor = _buttonHoverColor;
+            colors.pressedColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+            btn.colors = colors;
+
+            var textObj = new GameObject("Text");
+            textObj.transform.SetParent(btnObj.transform, false);
+
+            var textRect = textObj.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+
+            var tmp = textObj.AddComponent<TextMeshProUGUI>();
+            tmp.text = text;
+            tmp.fontSize = 20;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Color.white;
+
+            return btn;
+        }
+
+        private HotbarSlotUI CreateHotbarSlot(Transform parent, int index)
+        {
+            var slotObj = new GameObject($"HotbarSlot_{index}");
+            slotObj.transform.SetParent(parent, false);
+
+            var rect = slotObj.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(48, 48);
+
+            var image = slotObj.AddComponent<Image>();
+            image.color = _slotColor;
+
+            var slotUI = slotObj.AddComponent<HotbarSlotUI>();
+
+            // Selection border
+            var border = new GameObject("Border");
+            border.transform.SetParent(slotObj.transform, false);
+            var borderRect = border.AddComponent<RectTransform>();
+            borderRect.anchorMin = Vector2.zero;
+            borderRect.anchorMax = Vector2.one;
+            borderRect.offsetMin = Vector2.zero;
+            borderRect.offsetMax = Vector2.zero;
+            var borderImage = border.AddComponent<Image>();
+            borderImage.color = _slotSelectedColor;
+            border.SetActive(false);
+
+            // Icon
+            var icon = new GameObject("Icon");
+            icon.transform.SetParent(slotObj.transform, false);
+            var iconRect = icon.AddComponent<RectTransform>();
+            iconRect.anchorMin = new Vector2(0.1f, 0.1f);
+            iconRect.anchorMax = new Vector2(0.9f, 0.9f);
+            iconRect.offsetMin = Vector2.zero;
+            iconRect.offsetMax = Vector2.zero;
+            var iconImage = icon.AddComponent<Image>();
+            iconImage.color = Color.clear;
+
+            // Amount text
+            var amount = new GameObject("Amount");
+            amount.transform.SetParent(slotObj.transform, false);
+            var amountRect = amount.AddComponent<RectTransform>();
+            amountRect.anchorMin = new Vector2(0.5f, 0);
+            amountRect.anchorMax = new Vector2(1, 0.4f);
+            amountRect.offsetMin = Vector2.zero;
+            amountRect.offsetMax = Vector2.zero;
+            var amountText = amount.AddComponent<TextMeshProUGUI>();
+            amountText.text = "";
+            amountText.fontSize = 14;
+            amountText.alignment = TextAlignmentOptions.BottomRight;
+            amountText.color = Color.white;
+
+            // Slot number
+            var number = new GameObject("Number");
+            number.transform.SetParent(slotObj.transform, false);
+            var numberRect = number.AddComponent<RectTransform>();
+            numberRect.anchorMin = new Vector2(0, 0.6f);
+            numberRect.anchorMax = new Vector2(0.4f, 1);
+            numberRect.offsetMin = Vector2.zero;
+            numberRect.offsetMax = Vector2.zero;
+            var numberText = number.AddComponent<TextMeshProUGUI>();
+            numberText.text = (index + 1).ToString();
+            numberText.fontSize = 12;
+            numberText.alignment = TextAlignmentOptions.TopLeft;
+            numberText.color = new Color(0.6f, 0.6f, 0.6f);
+
+            SetPrivateField(slotUI, "_backgroundImage", image);
+            SetPrivateField(slotUI, "_selectionHighlight", border);
+            SetPrivateField(slotUI, "_iconImage", iconImage);
+            SetPrivateField(slotUI, "_quantityText", amountText);
+            SetPrivateField(slotUI, "_normalColor", _slotColor);
+            SetPrivateField(slotUI, "_selectedColor", _slotSelectedColor);
+            SetPrivateField(slotUI, "_slotNumber", index);
+
+            return slotUI;
+        }
+
+        private InventorySlotUI CreateInventorySlot(Transform parent, int index)
+        {
+            var slotObj = new GameObject($"InventorySlot_{index}");
+            slotObj.transform.SetParent(parent, false);
+
+            var image = slotObj.AddComponent<Image>();
+            image.color = _slotColor;
+
+            var slotUI = slotObj.AddComponent<InventorySlotUI>();
+
+            // Icon
+            var icon = new GameObject("Icon");
+            icon.transform.SetParent(slotObj.transform, false);
+            var iconRect = icon.AddComponent<RectTransform>();
+            iconRect.anchorMin = new Vector2(0.1f, 0.1f);
+            iconRect.anchorMax = new Vector2(0.9f, 0.9f);
+            iconRect.offsetMin = Vector2.zero;
+            iconRect.offsetMax = Vector2.zero;
+            var iconImage = icon.AddComponent<Image>();
+            iconImage.color = Color.clear;
+
+            // Amount text
+            var amount = new GameObject("Amount");
+            amount.transform.SetParent(slotObj.transform, false);
+            var amountRect = amount.AddComponent<RectTransform>();
+            amountRect.anchorMin = new Vector2(0.5f, 0);
+            amountRect.anchorMax = new Vector2(1, 0.4f);
+            amountRect.offsetMin = Vector2.zero;
+            amountRect.offsetMax = Vector2.zero;
+            var amountText = amount.AddComponent<TextMeshProUGUI>();
+            amountText.text = "";
+            amountText.fontSize = 14;
+            amountText.alignment = TextAlignmentOptions.BottomRight;
+            amountText.color = Color.white;
+
+            SetPrivateField(slotUI, "_backgroundImage", image);
+            SetPrivateField(slotUI, "_iconImage", iconImage);
+            SetPrivateField(slotUI, "_quantityText", amountText);
+
+            return slotUI;
+        }
+
+        private void SetPrivateField(object obj, string fieldName, object value)
+        {
+            var field = obj.GetType().GetField(fieldName,
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field != null)
+            {
+                field.SetValue(obj, value);
+            }
+            else
+            {
+                Debug.LogWarning($"[RuntimeUIBuilder] Field '{fieldName}' not found on {obj.GetType().Name}");
+            }
+        }
+
+        #endregion
+    }
+}

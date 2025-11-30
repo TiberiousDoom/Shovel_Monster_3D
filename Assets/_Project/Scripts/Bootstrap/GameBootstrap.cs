@@ -1,10 +1,14 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using VoxelRPG.Combat;
 using VoxelRPG.Core;
+using VoxelRPG.Core.Items;
 using VoxelRPG.Player;
+using VoxelRPG.UI;
 using VoxelRPG.Voxel;
 using VoxelRPG.Voxel.Generation;
+using VoxelRPG.World;
 
 namespace VoxelRPG.Bootstrap
 {
@@ -48,6 +52,14 @@ namespace VoxelRPG.Bootstrap
         [Tooltip("Input Actions asset for player controls")]
         [SerializeField] private InputActionAsset _inputActions;
 
+        [Header("Starting Items")]
+        [Tooltip("Items to give the player at start")]
+        [SerializeField] private ItemDefinition _startingItem;
+
+        [Header("Monster Spawning")]
+        [Tooltip("Monster types that can spawn")]
+        [SerializeField] private MonsterDefinition[] _monsterTypes;
+
         private WorldGenerator _worldGenerator;
 
         private void Start()
@@ -55,6 +67,9 @@ namespace VoxelRPG.Bootstrap
             SetupGameManager();
             SetupWorld();
             SetupLighting();
+            SetupTimeSystem();
+            SetupMonsterSpawner();
+            SetupUI();
             // Player setup is done after terrain generation in the coroutine
         }
 
@@ -338,6 +353,26 @@ namespace VoxelRPG.Bootstrap
             // Add BlockInteraction
             playerObject.AddComponent<BlockInteraction>();
 
+            // Add survival systems
+            var healthSystem = playerObject.AddComponent<HealthSystem>();
+            var hungerSystem = playerObject.AddComponent<HungerSystem>();
+            var playerStats = playerObject.AddComponent<PlayerStats>();
+            var playerInventory = playerObject.AddComponent<PlayerInventory>();
+            var deathHandler = playerObject.AddComponent<DeathHandler>();
+
+            // Configure hunger drain: 1 unit per minute = 1/60 per second
+            hungerSystem.HungerDecayRate = 1f / 60f;
+
+            // Give starting item if configured
+            if (_startingItem != null)
+            {
+                playerInventory.TryAddItem(_startingItem, 1);
+                Debug.Log($"[GameBootstrap] Gave player starting item: {_startingItem.DisplayName}");
+            }
+
+            // Tag player for easy finding
+            playerObject.tag = "Player";
+
             // Create ground check point
             var groundCheck = new GameObject("GroundCheck");
             groundCheck.transform.SetParent(playerObject.transform);
@@ -432,6 +467,71 @@ namespace VoxelRPG.Bootstrap
             lightObject.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
 
             Debug.Log("[GameBootstrap] Created directional light.");
+        }
+
+        private void SetupTimeSystem()
+        {
+            // Check if TimeManager already exists
+            if (FindFirstObjectByType<TimeManager>() != null)
+            {
+                return;
+            }
+
+            // Create TimeManager
+            var timeObject = new GameObject("TimeManager");
+            timeObject.AddComponent<TimeManager>();
+            Debug.Log("[GameBootstrap] Created TimeManager.");
+
+            // Add SunController to directional light
+            var light = FindFirstObjectByType<Light>();
+            if (light != null && light.type == LightType.Directional)
+            {
+                if (light.GetComponent<SunController>() == null)
+                {
+                    light.gameObject.AddComponent<SunController>();
+                    Debug.Log("[GameBootstrap] Added SunController to directional light.");
+                }
+            }
+
+            // Add weather stub
+            var weatherObject = new GameObject("WeatherSystem");
+            weatherObject.AddComponent<StubWeatherSystem>();
+            Debug.Log("[GameBootstrap] Created StubWeatherSystem.");
+        }
+
+        private void SetupMonsterSpawner()
+        {
+            // Check if MonsterSpawner already exists
+            if (FindFirstObjectByType<MonsterSpawner>() != null)
+            {
+                return;
+            }
+
+            // Create MonsterSpawner
+            var spawnerObject = new GameObject("MonsterSpawner");
+            var spawner = spawnerObject.AddComponent<MonsterSpawner>();
+
+            // Monster types will be set via inspector since we need prefab references
+            Debug.Log("[GameBootstrap] Created MonsterSpawner.");
+        }
+
+        private void SetupUI()
+        {
+            // Check if UI already exists
+            if (FindFirstObjectByType<UIManager>() != null)
+            {
+                return;
+            }
+
+            // Create UI builder and build the UI
+            var builderObject = new GameObject("UIBuilder");
+            var builder = builderObject.AddComponent<RuntimeUIBuilder>();
+            builder.BuildUI();
+
+            // Destroy the builder after use (it's not needed anymore)
+            Destroy(builderObject);
+
+            Debug.Log("[GameBootstrap] Created game UI.");
         }
     }
 }
