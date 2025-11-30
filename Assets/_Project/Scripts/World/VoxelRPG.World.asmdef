@@ -1,11 +1,8 @@
 {
-    "name": "VoxelRPG.UI",
-    "rootNamespace": "VoxelRPG.UI",
+    "name": "VoxelRPG.World",
+    "rootNamespace": "VoxelRPG.World",
     "references": [
-        "VoxelRPG.Core",
-        "VoxelRPG.Utilities",
-        "VoxelRPG.Player",
-        "Unity.InputSystem"
+        "VoxelRPG.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
