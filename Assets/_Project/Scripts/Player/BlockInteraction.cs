@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using VoxelRPG.Core;
+using VoxelRPG.Core.Items;
 using VoxelRPG.Voxel;
 
 namespace VoxelRPG.Player
@@ -178,6 +179,23 @@ namespace VoxelRPG.Player
             if (currentBlock == null || currentBlock == BlockType.Air)
             {
                 return;
+            }
+
+            // Add dropped item to inventory
+            if (currentBlock.DroppedItem != null && currentBlock.DropAmount > 0)
+            {
+                if (ServiceLocator.TryGet<PlayerInventory>(out var inventory))
+                {
+                    if (inventory.TryAddItem(currentBlock.DroppedItem, currentBlock.DropAmount))
+                    {
+                        Debug.Log($"[BlockInteraction] Added {currentBlock.DropAmount}x {currentBlock.DroppedItem.DisplayName} to inventory");
+                    }
+                    else
+                    {
+                        Debug.Log("[BlockInteraction] Inventory full - item dropped");
+                        // TODO: Spawn world drop if inventory is full
+                    }
+                }
             }
 
             _voxelWorld.RequestBlockChange(position, BlockType.Air);

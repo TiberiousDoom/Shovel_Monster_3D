@@ -16,6 +16,7 @@ namespace VoxelRPG.UI
         [Header("Grid References")]
         [SerializeField] private Transform _slotContainer;
         [SerializeField] private InventorySlotUI _slotPrefab;
+        [SerializeField] private InventorySlotUI[] _preCreatedSlots;
 
         [Header("Tooltip")]
         [SerializeField] private GameObject _tooltipPanel;
@@ -88,6 +89,21 @@ namespace VoxelRPG.UI
 
         private void InitializeSlots()
         {
+            // Use pre-created slots if available (runtime UI)
+            if (_preCreatedSlots != null && _preCreatedSlots.Length > 0)
+            {
+                _slots = _preCreatedSlots;
+                for (int i = 0; i < _slots.Length; i++)
+                {
+                    if (_slots[i] != null)
+                    {
+                        _slots[i].Initialize(this, i);
+                    }
+                }
+                return;
+            }
+
+            // Otherwise create slots dynamically from prefab
             if (_playerInventory == null || _slotContainer == null || _slotPrefab == null)
             {
                 return;

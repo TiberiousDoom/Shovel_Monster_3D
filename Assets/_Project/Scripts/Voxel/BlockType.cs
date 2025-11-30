@@ -1,4 +1,5 @@
 using UnityEngine;
+using VoxelRPG.Core.Items;
 
 namespace VoxelRPG.Voxel
 {
@@ -36,6 +37,13 @@ namespace VoxelRPG.Voxel
 
         [Tooltip("Whether this block can be placed by players")]
         [SerializeField] private bool _isPlaceable = true;
+
+        [Header("Item Drop")]
+        [Tooltip("Item dropped when this block is broken")]
+        [SerializeField] private ItemDefinition _droppedItem;
+
+        [Tooltip("Amount of items dropped")]
+        [SerializeField] private int _dropAmount = 1;
 
         /// <summary>
         /// Unique identifier for this block type.
@@ -76,6 +84,16 @@ namespace VoxelRPG.Voxel
         /// Whether this block can be placed by players.
         /// </summary>
         public bool IsPlaceable => _isPlaceable;
+
+        /// <summary>
+        /// Item dropped when this block is broken.
+        /// </summary>
+        public ItemDefinition DroppedItem => _droppedItem;
+
+        /// <summary>
+        /// Amount of items dropped when broken.
+        /// </summary>
+        public int DropAmount => _dropAmount;
 
         /// <summary>
         /// Static reference to air (null/empty) block type.
