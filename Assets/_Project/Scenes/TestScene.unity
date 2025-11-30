@@ -159,6 +159,9 @@ MonoBehaviour:
   _playerPrefab: {fileID: 0}
   _gameManagerPrefab: {fileID: 0}
   _inputActions: {fileID: -944628639613478452, guid: 9a111b0f62723354e921888551dadeb7, type: 3}
+  _startingItem: {fileID: 11400000, guid: b2c3d4e5f67890abcd1234567890ab12, type: 2}
+  _monsterTypes:
+  - {fileID: 11400000, guid: a1b2c3d4e5f67890abcd1234567890ab, type: 2}
 --- !u!4 &194696562
 Transform:
   m_ObjectHideFlags: 0
