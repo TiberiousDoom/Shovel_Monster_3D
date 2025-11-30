@@ -1,5 +1,6 @@
 using UnityEngine;
 using VoxelRPG.Core;
+using VoxelRPG.Voxel;
 
 namespace VoxelRPG.Player
 {
@@ -28,11 +29,18 @@ namespace VoxelRPG.Player
         [SerializeField] private KeyCode _healKey = KeyCode.F2;
         [SerializeField] private KeyCode _feedKey = KeyCode.F3;
         [SerializeField] private KeyCode _logStatsKey = KeyCode.F4;
+        [SerializeField] private KeyCode _unstuckKey = KeyCode.F5;
+
+        [Header("Unstuck Settings")]
+        [Tooltip("Height above current position to teleport when unstuck")]
+        [SerializeField] private float _unstuckHeight = 3f;
 
         private PlayerStats _playerStats;
         private HealthSystem _healthSystem;
         private HungerSystem _hungerSystem;
         private PlayerController _playerController;
+        private CharacterController _characterController;
+        private IVoxelWorld _voxelWorld;
 
         private float _lastLogTime;
         private float _highestY;
@@ -51,6 +59,7 @@ namespace VoxelRPG.Player
                 Debug.Log($"  {_healKey} - Heal {_testHealAmount} HP");
                 Debug.Log($"  {_feedKey} - Restore {_testFeedAmount} hunger");
                 Debug.Log($"  {_logStatsKey} - Log current stats");
+                Debug.Log($"  {_unstuckKey} - Teleport up if stuck in blocks");
                 Debug.Log($"  Fall damage: {(_enableFallDamage ? "ON" : "OFF")} (min {_minFallDistance}m, {_damagePerMeter} dmg/m)");
             }
         }
@@ -72,6 +81,13 @@ namespace VoxelRPG.Player
             if (_healthSystem == null && _playerStats != null) _healthSystem = _playerStats.Health;
             if (_hungerSystem == null && _playerStats != null) _hungerSystem = _playerStats.Hunger;
             if (_playerController == null) ServiceLocator.TryGet(out _playerController);
+
+            // Get CharacterController for unstuck feature
+            _characterController = GetComponent<CharacterController>();
+            if (_characterController == null) _characterController = GetComponentInParent<CharacterController>();
+
+            // Get VoxelWorld for block checking
+            ServiceLocator.TryGet(out _voxelWorld);
         }
 
         private void SubscribeToEvents()
@@ -145,6 +161,11 @@ namespace VoxelRPG.Player
             if (Input.GetKeyDown(_logStatsKey))
             {
                 LogCurrentStats();
+            }
+
+            if (Input.GetKeyDown(_unstuckKey))
+            {
+                TryUnstuck();
             }
         }
 
@@ -252,6 +273,149 @@ namespace VoxelRPG.Player
         private void OnPlayerDeath()
         {
             Debug.LogError("[SurvivalDebug] === PLAYER DIED ===");
+        }
+
+        #endregion
+
+        #region Unstuck Feature
+
+        /// <summary>
+        /// Attempts to teleport the player out of any blocks they're stuck in.
+        /// </summary>
+        private void TryUnstuck()
+        {
+            if (_characterController == null)
+            {
+                Debug.LogWarning("[SurvivalDebug] Cannot unstuck - no CharacterController found");
+                return;
+            }
+
+            // Check if player is actually stuck inside blocks
+            bool isStuck = IsPlayerStuckInBlocks();
+
+            if (!isStuck)
+            {
+                Debug.Log("[SurvivalDebug] Player is not stuck in any blocks");
+                return;
+            }
+
+            // Find a safe position above current location
+            Vector3 safePosition = FindSafePosition();
+
+            // Disable CharacterController temporarily to allow teleportation
+            _characterController.enabled = false;
+            transform.position = safePosition;
+            _characterController.enabled = true;
+
+            // Reset fall tracking so we don't take fall damage from teleport
+            _isFalling = false;
+            _highestY = safePosition.y;
+
+            Debug.Log($"[SurvivalDebug] Teleported to safe position: {safePosition}");
+        }
+
+        /// <summary>
+        /// Checks if the player's bounding box overlaps with any solid blocks.
+        /// </summary>
+        private bool IsPlayerStuckInBlocks()
+        {
+            if (_voxelWorld == null) return false;
+
+            var playerCenter = _characterController.transform.position + _characterController.center;
+            float radius = _characterController.radius;
+            float halfHeight = _characterController.height * 0.5f;
+
+            // Check blocks that could overlap with player bounds
+            int minX = Mathf.FloorToInt(playerCenter.x - radius);
+            int maxX = Mathf.FloorToInt(playerCenter.x + radius);
+            int minY = Mathf.FloorToInt(playerCenter.y - halfHeight);
+            int maxY = Mathf.FloorToInt(playerCenter.y + halfHeight);
+            int minZ = Mathf.FloorToInt(playerCenter.z - radius);
+            int maxZ = Mathf.FloorToInt(playerCenter.z + radius);
+
+            for (int x = minX; x <= maxX; x++)
+            {
+                for (int y = minY; y <= maxY; y++)
+                {
+                    for (int z = minZ; z <= maxZ; z++)
+                    {
+                        var blockPos = new Vector3Int(x, y, z);
+                        var block = _voxelWorld.GetBlock(blockPos);
+
+                        if (block != null && block != BlockType.Air && block.IsSolid)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Finds a safe position above the player's current location.
+        /// </summary>
+        private Vector3 FindSafePosition()
+        {
+            Vector3 currentPos = transform.position;
+
+            // Start searching from above current position
+            float searchY = currentPos.y + _unstuckHeight;
+            float maxSearchY = currentPos.y + 50f; // Don't search forever
+
+            while (searchY < maxSearchY)
+            {
+                Vector3 testPos = new Vector3(currentPos.x, searchY, currentPos.z);
+
+                if (IsPositionSafe(testPos))
+                {
+                    return testPos;
+                }
+
+                searchY += 1f;
+            }
+
+            // Fallback: just teleport up by unstuck height
+            return currentPos + Vector3.up * _unstuckHeight;
+        }
+
+        /// <summary>
+        /// Checks if a position is safe for the player (no solid blocks in player volume).
+        /// </summary>
+        private bool IsPositionSafe(Vector3 position)
+        {
+            if (_voxelWorld == null) return true;
+
+            float radius = _characterController.radius;
+            float height = _characterController.height;
+
+            // Check blocks in player volume at test position
+            int minX = Mathf.FloorToInt(position.x - radius);
+            int maxX = Mathf.FloorToInt(position.x + radius);
+            int minY = Mathf.FloorToInt(position.y);
+            int maxY = Mathf.FloorToInt(position.y + height);
+            int minZ = Mathf.FloorToInt(position.z - radius);
+            int maxZ = Mathf.FloorToInt(position.z + radius);
+
+            for (int x = minX; x <= maxX; x++)
+            {
+                for (int y = minY; y <= maxY; y++)
+                {
+                    for (int z = minZ; z <= maxZ; z++)
+                    {
+                        var blockPos = new Vector3Int(x, y, z);
+                        var block = _voxelWorld.GetBlock(blockPos);
+
+                        if (block != null && block != BlockType.Air && block.IsSolid)
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
         }
 
         #endregion

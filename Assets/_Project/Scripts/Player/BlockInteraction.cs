@@ -16,6 +16,10 @@ namespace VoxelRPG.Player
         [Tooltip("Layer mask for block raycasting. Use Everything (-1) if unset.")]
         [SerializeField] private LayerMask _blockLayerMask = -1;
 
+        [Header("Player Collision")]
+        [Tooltip("Reference to player's CharacterController for placement collision check")]
+        [SerializeField] private CharacterController _characterController;
+
         [Header("References")]
         [SerializeField] private Camera _playerCamera;
 
@@ -56,6 +60,15 @@ namespace VoxelRPG.Player
             if (_playerCamera == null)
             {
                 _playerCamera = Camera.main;
+            }
+
+            if (_characterController == null)
+            {
+                _characterController = GetComponent<CharacterController>();
+                if (_characterController == null)
+                {
+                    _characterController = GetComponentInParent<CharacterController>();
+                }
             }
 
             // Set a default block for placing if registry is available
@@ -192,6 +205,13 @@ namespace VoxelRPG.Player
                 return;
             }
 
+            // Check if block would overlap with player
+            if (WouldBlockOverlapPlayer(position))
+            {
+                Debug.Log("[BlockInteraction] Cannot place block - would overlap with player");
+                return;
+            }
+
             _voxelWorld.RequestBlockChange(position, SelectedBlockType);
 
             // Rebuild meshes after block change
@@ -199,6 +219,33 @@ namespace VoxelRPG.Player
             {
                 world.RebuildDirtyChunks();
             }
+        }
+
+        /// <summary>
+        /// Checks if placing a block at the given position would overlap the player.
+        /// </summary>
+        private bool WouldBlockOverlapPlayer(Vector3Int blockPosition)
+        {
+            if (_characterController == null) return false;
+
+            // Get the block's bounding box (blocks are 1x1x1 cubes)
+            var blockMin = new Vector3(blockPosition.x, blockPosition.y, blockPosition.z);
+            var blockMax = blockMin + Vector3.one;
+            var blockBounds = new Bounds((blockMin + blockMax) * 0.5f, Vector3.one);
+
+            // Get player's bounding box from CharacterController
+            var playerCenter = _characterController.transform.position + _characterController.center;
+            var playerBounds = new Bounds(
+                playerCenter,
+                new Vector3(
+                    _characterController.radius * 2f,
+                    _characterController.height,
+                    _characterController.radius * 2f
+                )
+            );
+
+            // Check for intersection
+            return blockBounds.Intersects(playerBounds);
         }
 
         /// <summary>
