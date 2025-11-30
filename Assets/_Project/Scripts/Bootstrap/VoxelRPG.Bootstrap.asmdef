@@ -5,6 +5,9 @@
         "VoxelRPG.Core",
         "VoxelRPG.Voxel",
         "VoxelRPG.Player",
+        "VoxelRPG.Combat",
+        "VoxelRPG.UI",
+        "VoxelRPG.World",
         "Unity.InputSystem"
     ],
     "includePlatforms": [],
