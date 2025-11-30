@@ -177,7 +177,7 @@ namespace VoxelRPG.UI
                     BeginDrag(slotIndex, new ItemStack(stack.Item, halfQty));
 
                     // Remove half from source
-                    _playerInventory.SetSlot(slotIndex, new ItemStack(stack.Item, stack.Quantity - halfQty));
+                    _playerInventory.TrySetSlot(slotIndex, new ItemStack(stack.Item, stack.Quantity - halfQty));
                 }
             }
         }
@@ -194,18 +194,18 @@ namespace VoxelRPG.UI
             if (targetStack.IsEmpty)
             {
                 // Place in empty slot
-                _playerInventory.SetSlot(targetSlot, _dragStack);
+                _playerInventory.TrySetSlot(targetSlot, _dragStack);
             }
             else if (targetStack.Item == _dragStack.Item && targetStack.CanStack(_dragStack.Quantity))
             {
                 // Stack same items
-                _playerInventory.SetSlot(targetSlot, targetStack.AddQuantity(_dragStack.Quantity));
+                _playerInventory.TrySetSlot(targetSlot, targetStack.AddQuantity(_dragStack.Quantity));
             }
             else
             {
                 // Swap items
-                _playerInventory.SetSlot(_dragSourceSlot, targetStack);
-                _playerInventory.SetSlot(targetSlot, _dragStack);
+                _playerInventory.TrySetSlot(_dragSourceSlot, targetStack);
+                _playerInventory.TrySetSlot(targetSlot, _dragStack);
             }
 
             EndDrag();
@@ -220,13 +220,13 @@ namespace VoxelRPG.UI
             if (targetStack.IsEmpty)
             {
                 // Place one item
-                _playerInventory.SetSlot(targetSlot, new ItemStack(_dragStack.Item, 1));
+                _playerInventory.TrySetSlot(targetSlot, new ItemStack(_dragStack.Item, 1));
                 _dragStack = _dragStack.RemoveQuantity(1);
             }
             else if (targetStack.Item == _dragStack.Item && targetStack.CanStack(1))
             {
                 // Add one to stack
-                _playerInventory.SetSlot(targetSlot, targetStack.AddQuantity(1));
+                _playerInventory.TrySetSlot(targetSlot, targetStack.AddQuantity(1));
                 _dragStack = _dragStack.RemoveQuantity(1);
             }
 
@@ -257,7 +257,7 @@ namespace VoxelRPG.UI
             _dragStack = stack;
 
             // Clear source slot
-            _playerInventory.SetSlot(sourceSlot, ItemStack.Empty);
+            _playerInventory.TrySetSlot(sourceSlot, ItemStack.Empty);
 
             // Show drag visual
             if (_dragIcon != null)
@@ -298,7 +298,7 @@ namespace VoxelRPG.UI
                 var currentSource = _playerInventory.GetSlot(_dragSourceSlot);
                 if (currentSource.IsEmpty)
                 {
-                    _playerInventory.SetSlot(_dragSourceSlot, _dragStack);
+                    _playerInventory.TrySetSlot(_dragSourceSlot, _dragStack);
                 }
                 else
                 {

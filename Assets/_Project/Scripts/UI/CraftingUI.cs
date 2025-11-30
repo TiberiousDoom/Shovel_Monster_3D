@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -23,7 +24,6 @@ namespace VoxelRPG.UI
         [Header("Recipe Details")]
         [SerializeField] private GameObject _detailsPanel;
         [SerializeField] private TextMeshProUGUI _recipeName;
-        [SerializeField] private TextMeshProUGUI _recipeDescription;
         [SerializeField] private Image _resultIcon;
         [SerializeField] private TextMeshProUGUI _resultQuantity;
         [SerializeField] private Transform _ingredientsContainer;
@@ -108,7 +108,7 @@ namespace VoxelRPG.UI
                 var slot = slotObj.GetComponent<RecipeSlotUI>();
                 if (slot != null)
                 {
-                    bool canCraft = _craftingManager?.CanCraft(recipe, _playerInventory) ?? false;
+                    bool canCraft = recipe.CanCraft(_playerInventory);
                     slot.Initialize(this, recipe, canCraft);
                     _recipeSlots.Add(slot);
                 }
@@ -121,7 +121,7 @@ namespace VoxelRPG.UI
             {
                 if (slot != null && slot.Recipe != null)
                 {
-                    bool canCraft = _craftingManager?.CanCraft(slot.Recipe, _playerInventory) ?? false;
+                    bool canCraft = slot.Recipe.CanCraft(_playerInventory);
                     slot.SetCanCraft(canCraft);
                 }
             }
@@ -182,23 +182,17 @@ namespace VoxelRPG.UI
                 _recipeName.text = _selectedRecipe.DisplayName;
             }
 
-            // Description
-            if (_recipeDescription != null)
-            {
-                _recipeDescription.text = _selectedRecipe.Description;
-            }
-
             // Result icon and quantity
-            if (_resultIcon != null && _selectedRecipe.Result.Item != null)
+            if (_resultIcon != null && _selectedRecipe.OutputItem != null)
             {
-                _resultIcon.sprite = _selectedRecipe.Result.Item.Icon;
+                _resultIcon.sprite = _selectedRecipe.OutputItem.Icon;
                 _resultIcon.enabled = true;
             }
 
             if (_resultQuantity != null)
             {
-                _resultQuantity.text = _selectedRecipe.Result.Quantity > 1
-                    ? $"x{_selectedRecipe.Result.Quantity}"
+                _resultQuantity.text = _selectedRecipe.OutputAmount > 1
+                    ? $"x{_selectedRecipe.OutputAmount}"
                     : "";
             }
 
@@ -206,7 +200,7 @@ namespace VoxelRPG.UI
             RefreshIngredients();
 
             // Craft button
-            bool canCraft = _craftingManager?.CanCraft(_selectedRecipe, _playerInventory) ?? false;
+            bool canCraft = _selectedRecipe.CanCraft(_playerInventory);
             if (_craftButton != null)
             {
                 _craftButton.interactable = canCraft;
@@ -243,7 +237,8 @@ namespace VoxelRPG.UI
                 if (slot != null)
                 {
                     int playerHas = _playerInventory?.GetItemCount(ingredient.Item) ?? 0;
-                    slot.Initialize(ingredient, playerHas);
+                    int required = ingredient.Amount;
+                    slot.Initialize(ingredient.Item, required, playerHas);
                     _ingredientSlots.Add(slot);
                 }
             }
@@ -278,9 +273,9 @@ namespace VoxelRPG.UI
                 return;
             }
 
-            bool success = _craftingManager.TryCraft(_selectedRecipe, _playerInventory);
+            var job = _craftingManager.TryCraft(_selectedRecipe, _playerInventory);
 
-            if (success)
+            if (job != null)
             {
                 Debug.Log($"[CraftingUI] Crafted {_selectedRecipe.DisplayName}");
 
@@ -304,7 +299,7 @@ namespace VoxelRPG.UI
             }
 
             int crafted = 0;
-            while (_craftingManager.TryCraft(_selectedRecipe, _playerInventory))
+            while (_craftingManager.TryCraft(_selectedRecipe, _playerInventory) != null)
             {
                 crafted++;
                 if (crafted >= 100) break; // Safety limit
@@ -344,9 +339,9 @@ namespace VoxelRPG.UI
             _recipe = recipe;
             _canCraft = canCraft;
 
-            if (_icon != null && recipe.Result.Item != null)
+            if (_icon != null && recipe.OutputItem != null)
             {
-                _icon.sprite = recipe.Result.Item.Icon;
+                _icon.sprite = recipe.OutputItem.Icon;
             }
 
             if (_nameText != null)
@@ -400,17 +395,17 @@ namespace VoxelRPG.UI
         [SerializeField] private Color _hasEnoughColor = Color.white;
         [SerializeField] private Color _notEnoughColor = Color.red;
 
-        public void Initialize(RecipeIngredient ingredient, int playerHas)
+        public void Initialize(ItemDefinition item, int required, int playerHas)
         {
-            if (_icon != null && ingredient.Item != null)
+            if (_icon != null && item != null)
             {
-                _icon.sprite = ingredient.Item.Icon;
+                _icon.sprite = item.Icon;
             }
 
             if (_quantityText != null)
             {
-                _quantityText.text = $"{playerHas}/{ingredient.Quantity}";
-                _quantityText.color = playerHas >= ingredient.Quantity ? _hasEnoughColor : _notEnoughColor;
+                _quantityText.text = $"{playerHas}/{required}";
+                _quantityText.color = playerHas >= required ? _hasEnoughColor : _notEnoughColor;
             }
         }
     }

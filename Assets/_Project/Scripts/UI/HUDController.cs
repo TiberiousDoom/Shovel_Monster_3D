@@ -129,8 +129,8 @@ namespace VoxelRPG.UI
 
             if (_playerInventory != null)
             {
-                _playerInventory.OnHotbarSlotChanged += OnHotbarSlotChanged;
-                _playerInventory.OnSelectedSlotChanged += OnSelectedSlotChanged;
+                _playerInventory.OnSlotChanged += OnHotbarSlotChanged;
+                _playerInventory.OnHotbarSelectionChanged += OnSelectedSlotChanged;
             }
         }
 
@@ -150,8 +150,8 @@ namespace VoxelRPG.UI
 
             if (_playerInventory != null)
             {
-                _playerInventory.OnHotbarSlotChanged -= OnHotbarSlotChanged;
-                _playerInventory.OnSelectedSlotChanged -= OnSelectedSlotChanged;
+                _playerInventory.OnSlotChanged -= OnHotbarSlotChanged;
+                _playerInventory.OnHotbarSelectionChanged -= OnSelectedSlotChanged;
             }
         }
 
@@ -237,7 +237,8 @@ namespace VoxelRPG.UI
 
         private void OnHotbarSlotChanged(int slot, ItemStack stack)
         {
-            if (_hotbarSlots != null && slot >= 0 && slot < _hotbarSlots.Length)
+            // Only update if this is a hotbar slot (first N slots are hotbar)
+            if (_hotbarSlots != null && slot >= 0 && slot < _hotbarSlots.Length && _playerInventory.IsHotbarSlot(slot))
             {
                 _hotbarSlots[slot]?.UpdateSlot(stack);
             }

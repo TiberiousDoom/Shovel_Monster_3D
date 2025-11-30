@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
 using VoxelRPG.Core;
+using VoxelRPG.Utilities.Save;
 
 namespace VoxelRPG.UI
 {
@@ -145,7 +146,7 @@ namespace VoxelRPG.UI
             // Try to save
             if (ServiceLocator.TryGet<SaveManager>(out var saveManager))
             {
-                bool success = saveManager.SaveGame();
+                bool success = saveManager.Save("quicksave");
                 ShowSaveStatus(success ? "Game Saved!" : "Save Failed!");
             }
             else
