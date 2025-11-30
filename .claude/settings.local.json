@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Implement Phase 1.2 - Player Survival Systems\n\nAdd comprehensive player survival mechanics including:\n- IDamageable interface for shared damage contract (Combat)\n- HealthSystem for HP, damage, and healing\n- HungerSystem for food consumption and starvation\n- PlayerStats as central coordinator for all survival systems\n- DeathHandler for player death and respawn logic\n- FloatEventChannel for stat change events\n\nFeatures:\n- Modular, reusable components (HealthSystem can be used by NPCs later)\n- Event-driven architecture using ScriptableObject event channels\n- Full save/load support with serializable data classes\n- Starvation mechanic: low hunger causes health drain\n- Configurable respawn with delay, spawn points, and stat restoration\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Implement Phase 1.2 - Player Survival Systems\n\nAdd comprehensive player survival mechanics including:\n- IDamageable interface for shared damage contract (Combat)\n- HealthSystem for HP, damage, and healing\n- HungerSystem for food consumption and starvation\n- PlayerStats as central coordinator for all survival systems\n- DeathHandler for player death and respawn logic\n- FloatEventChannel for stat change events\n\nFeatures:\n- Modular, reusable components (HealthSystem can be used by NPCs later)\n- Event-driven architecture using ScriptableObject event channels\n- Full save/load support with serializable data classes\n- Starvation mechanic: low hunger causes health drain\n- Configurable respawn with delay, spawn points, and stat restoration\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
