@@ -234,9 +234,69 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1314971602
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1314971604}
+  - component: {fileID: 1314971603}
+  m_Layer: 0
+  m_Name: MonsterSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1314971603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1314971602}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50c4c76434611884f97d9a77362ba16d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: VoxelRPG.Combat::VoxelRPG.Combat.MonsterSpawner
+  _monsterTypes:
+  - {fileID: 11400000, guid: 0dc32da077971c446bd99823bf01aea3, type: 2}
+  - {fileID: 11400000, guid: a1b2c3d4e5f67890abcd1234567890ab, type: 2}
+  _maxActiveMonsters: 20
+  _spawnInterval: 5
+  _spawnsPerEvent: 1
+  _minSpawnDistance: 20
+  _maxSpawnDistance: 40
+  _spawnHeight: 1
+  _despawnDistance: 60
+  _despawnAtDawn: 0
+  _burnInsteadOfDespawn: 0
+  _spawnCenter: {fileID: 0}
+  _forceSpawning: 1
+  _showDebugGizmos: 1
+--- !u!4 &1314971604
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1314971602}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 20.23715, y: -2.20988, z: 28.43752}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 194696562}
   - {fileID: 870883450}
+  - {fileID: 1314971604}
