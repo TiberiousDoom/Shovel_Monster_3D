@@ -13,9 +13,16 @@ namespace VoxelRPG.Voxel
     public class VoxelChunk : MonoBehaviour
     {
         /// <summary>
-        /// Size of chunk in each dimension.
+        /// Size of chunk in each dimension (number of blocks).
         /// </summary>
         public const int SIZE = 16;
+
+        /// <summary>
+        /// Size of each block in Unity units.
+        /// Smaller values = smaller blocks = player feels bigger.
+        /// Default: 1.0f, Half-size: 0.5f
+        /// </summary>
+        public const float BLOCK_SIZE = 0.5f;
 
         /// <summary>
         /// Total number of blocks in a chunk.
@@ -92,11 +99,11 @@ namespace VoxelRPG.Voxel
                 }
             }
 
-            // Position the chunk in world space
+            // Position the chunk in world space (scaled by BLOCK_SIZE)
             transform.position = new Vector3(
-                chunkPosition.x * SIZE,
-                chunkPosition.y * SIZE,
-                chunkPosition.z * SIZE
+                chunkPosition.x * SIZE * BLOCK_SIZE,
+                chunkPosition.y * SIZE * BLOCK_SIZE,
+                chunkPosition.z * SIZE * BLOCK_SIZE
             );
 
             _isInitialized = true;

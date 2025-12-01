@@ -197,9 +197,12 @@ namespace VoxelRPG.Voxel
             var normal = FaceNormals[faceIndex];
             var offset = normal * FACE_OFFSET;
 
+            // Scale by BLOCK_SIZE for smaller/larger blocks
+            float blockSize = VoxelChunk.BLOCK_SIZE;
+
             for (int i = 0; i < 4; i++)
             {
-                _vertices.Add(blockPos + faceVerts[i] + offset);
+                _vertices.Add((blockPos + faceVerts[i]) * blockSize + offset);
                 _normals.Add(normal);
                 _colors.Add(color);
             }
