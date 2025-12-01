@@ -36,6 +36,7 @@ namespace VoxelRPG.Combat
         [SerializeField] private float _attackRadius = 1f;
         [SerializeField] private GameObject _projectilePrefab;
         [SerializeField] private float _projectileSpeed = 10f;
+        [SerializeField] private Transform _projectileSpawnPoint;
 
         [Header("Visual Effects")]
         [SerializeField] private ParticleSystem _summonEffect;
@@ -660,10 +661,11 @@ namespace VoxelRPG.Combat
             // Fire projectile if we have one
             if (_projectilePrefab != null)
             {
-                Vector3 spawnPos = _attackPoint.position;
-                Vector3 direction = (_currentTarget.position - spawnPos).normalized;
+                Vector3 spawnPosition = _projectileSpawnPoint != null ? _projectileSpawnPoint.position : transform.position;
+                Quaternion spawnRotation = _projectileSpawnPoint != null ? _projectileSpawnPoint.rotation : transform.rotation;
+                Vector3 direction = (_currentTarget.position - spawnPosition).normalized;
 
-                GameObject projectile = Instantiate(_projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
+                GameObject projectile = Instantiate(_projectilePrefab, spawnPosition, spawnRotation);
 
                 // Configure projectile damage
                 var hitbox = projectile.GetComponent<Hitbox>();
