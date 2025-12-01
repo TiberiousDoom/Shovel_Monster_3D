@@ -28,10 +28,22 @@ public class SetupNecromancerAndAxe : EditorWindow
         CreateAxePrefab();
         CreateProjectilePrefab();
 
+        // Link prefabs to definitions
+        LinkPrefabsToDefinitions();
+
+        // Configure MonsterSpawner in scene
+        ConfigureMonsterSpawner();
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
         Debug.Log("Skeleton Necromancer and Axe setup complete!");
+    }
+
+    [MenuItem("Tools/Configure Monster Spawner")]
+    static void ConfigureMonsterSpawnerMenu()
+    {
+        ConfigureMonsterSpawner();
     }
 
     static void CreateDirectoryIfNeeded(string path)
@@ -348,5 +360,201 @@ public class SetupNecromancerAndAxe : EditorWindow
         PrefabUtility.SaveAsPrefabAsset(projectile, path);
         Object.DestroyImmediate(projectile);
         Debug.Log("Created Necromancer Projectile Prefab");
+    }
+
+    static void LinkPrefabsToDefinitions()
+    {
+        // Link Necromancer prefab to definition
+        MonsterDefinition necroDef = AssetDatabase.LoadAssetAtPath<MonsterDefinition>(
+            "Assets/_Project/ScriptableObjects/Monsters/SkeletonNecromancer.asset");
+        GameObject necroPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+            "Assets/_Project/Prefabs/Enemies/SkeletonNecromancer.prefab");
+
+        if (necroDef != null && necroPrefab != null)
+        {
+            SerializedObject so = new SerializedObject(necroDef);
+            so.FindProperty("_prefab").objectReferenceValue = necroPrefab;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(necroDef);
+            Debug.Log("Linked SkeletonNecromancer prefab to definition");
+        }
+
+        // Link Zombie prefab to definition (if exists)
+        MonsterDefinition zombieDef = AssetDatabase.LoadAssetAtPath<MonsterDefinition>(
+            "Assets/_Project/ScriptableObjects/Monsters/Zombie.asset");
+        GameObject zombiePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+            "Assets/_Project/Prefabs/Enemies/Zombie.prefab");
+
+        if (zombieDef != null && zombiePrefab != null)
+        {
+            SerializedObject so = new SerializedObject(zombieDef);
+            so.FindProperty("_prefab").objectReferenceValue = zombiePrefab;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(zombieDef);
+            Debug.Log("Linked Zombie prefab to definition");
+        }
+        else if (zombieDef != null && zombiePrefab == null)
+        {
+            // Create a basic Zombie prefab if it doesn't exist
+            CreateZombiePrefab();
+            zombiePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/_Project/Prefabs/Enemies/Zombie.prefab");
+            if (zombiePrefab != null)
+            {
+                SerializedObject so = new SerializedObject(zombieDef);
+                so.FindProperty("_prefab").objectReferenceValue = zombiePrefab;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(zombieDef);
+                Debug.Log("Created and linked Zombie prefab to definition");
+            }
+        }
+
+        // Link projectile to NecromancerAI in prefab
+        if (necroPrefab != null)
+        {
+            GameObject projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/_Project/Prefabs/Effects/NecromancerProjectile.prefab");
+
+            if (projectilePrefab != null)
+            {
+                // Load prefab for editing
+                string prefabPath = AssetDatabase.GetAssetPath(necroPrefab);
+                GameObject prefabRoot = PrefabUtility.LoadPrefabContents(prefabPath);
+
+                NecromancerAI ai = prefabRoot.GetComponent<NecromancerAI>();
+                if (ai != null)
+                {
+                    SerializedObject so = new SerializedObject(ai);
+                    so.FindProperty("_projectilePrefab").objectReferenceValue = projectilePrefab;
+
+                    // Also link attack point and summon point
+                    Transform attackPoint = prefabRoot.transform.Find("AttackPoint");
+                    Transform summonPoint = prefabRoot.transform.Find("SummonPoint");
+
+                    if (attackPoint != null)
+                        so.FindProperty("_attackPoint").objectReferenceValue = attackPoint;
+                    if (summonPoint != null)
+                        so.FindProperty("_summonPoint").objectReferenceValue = summonPoint;
+
+                    so.ApplyModifiedPropertiesWithoutUndo();
+
+                    PrefabUtility.SaveAsPrefabAsset(prefabRoot, prefabPath);
+                    Debug.Log("Linked projectile prefab to NecromancerAI");
+                }
+
+                PrefabUtility.UnloadPrefabContents(prefabRoot);
+            }
+        }
+    }
+
+    static void CreateZombiePrefab()
+    {
+        string path = "Assets/_Project/Prefabs/Enemies/Zombie.prefab";
+
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
+        {
+            return;
+        }
+
+        GameObject zombie = new GameObject("Zombie");
+
+        // Add NavMeshAgent
+        NavMeshAgent agent = zombie.AddComponent<NavMeshAgent>();
+        agent.speed = 4f;
+        agent.angularSpeed = 120f;
+        agent.stoppingDistance = 1.5f;
+
+        // Add CapsuleCollider
+        CapsuleCollider collider = zombie.AddComponent<CapsuleCollider>();
+        collider.height = 2f;
+        collider.radius = 0.5f;
+        collider.center = new Vector3(0, 1f, 0);
+
+        // Add MonsterHealth
+        zombie.AddComponent<MonsterHealth>();
+
+        // Add BasicMonsterAI
+        BasicMonsterAI ai = zombie.AddComponent<BasicMonsterAI>();
+
+        // Set the definition reference
+        MonsterDefinition def = AssetDatabase.LoadAssetAtPath<MonsterDefinition>(
+            "Assets/_Project/ScriptableObjects/Monsters/Zombie.asset");
+        if (def != null)
+        {
+            SerializedObject so = new SerializedObject(ai);
+            so.FindProperty("_definition").objectReferenceValue = def;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // Add Animator
+        zombie.AddComponent<Animator>();
+
+        // Create attack point
+        GameObject attackPoint = new GameObject("AttackPoint");
+        attackPoint.transform.SetParent(zombie.transform);
+        attackPoint.transform.localPosition = new Vector3(0, 1f, 0.8f);
+
+        // Create visual representation (placeholder)
+        GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        visual.name = "Visual_Placeholder";
+        visual.transform.SetParent(zombie.transform);
+        visual.transform.localPosition = new Vector3(0, 1f, 0);
+        visual.transform.localScale = new Vector3(0.8f, 1f, 0.8f);
+        Object.DestroyImmediate(visual.GetComponent<Collider>());
+
+        // Set color to greenish for zombie
+        Material mat = new Material(Shader.Find("Standard"));
+        mat.color = new Color(0.3f, 0.5f, 0.3f);
+        visual.GetComponent<Renderer>().sharedMaterial = mat;
+
+        // Save as prefab
+        PrefabUtility.SaveAsPrefabAsset(zombie, path);
+        Object.DestroyImmediate(zombie);
+        Debug.Log("Created Zombie Prefab");
+    }
+
+    static void ConfigureMonsterSpawner()
+    {
+        // Find MonsterSpawner in scene
+        MonsterSpawner spawner = Object.FindObjectOfType<MonsterSpawner>();
+
+        if (spawner == null)
+        {
+            Debug.LogWarning("No MonsterSpawner found in scene! Please add one to a GameObject.");
+            return;
+        }
+
+        // Load all monster definitions
+        MonsterDefinition zombieDef = AssetDatabase.LoadAssetAtPath<MonsterDefinition>(
+            "Assets/_Project/ScriptableObjects/Monsters/Zombie.asset");
+        MonsterDefinition necroDef = AssetDatabase.LoadAssetAtPath<MonsterDefinition>(
+            "Assets/_Project/ScriptableObjects/Monsters/SkeletonNecromancer.asset");
+
+        // Build list of valid definitions
+        var definitions = new System.Collections.Generic.List<MonsterDefinition>();
+        if (zombieDef != null) definitions.Add(zombieDef);
+        if (necroDef != null) definitions.Add(necroDef);
+
+        if (definitions.Count == 0)
+        {
+            Debug.LogWarning("No monster definitions found!");
+            return;
+        }
+
+        // Assign to spawner
+        SerializedObject so = new SerializedObject(spawner);
+        SerializedProperty monsterTypesProperty = so.FindProperty("_monsterTypes");
+        monsterTypesProperty.arraySize = definitions.Count;
+
+        for (int i = 0; i < definitions.Count; i++)
+        {
+            monsterTypesProperty.GetArrayElementAtIndex(i).objectReferenceValue = definitions[i];
+        }
+
+        so.ApplyModifiedProperties();
+        EditorUtility.SetDirty(spawner);
+
+        Debug.Log($"Configured MonsterSpawner with {definitions.Count} monster types: " +
+                  string.Join(", ", definitions.ConvertAll(d => d.DisplayName)));
     }
 }
