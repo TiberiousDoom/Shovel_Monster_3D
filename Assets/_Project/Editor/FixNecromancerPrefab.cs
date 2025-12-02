@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEditor;
+using UnityEditor.Animations;
+using System.IO;
 
 /// <summary>
 /// Editor tool to fix the SkeletonNecromancer prefab.
@@ -62,30 +64,63 @@ public class FixNecromancerPrefab
         {
             // Check if model has an animator with controller
             Animator modelAnimator = modelTransform.GetComponentInChildren<Animator>();
-            if (modelAnimator != null && modelAnimator.runtimeAnimatorController != null)
+            if (modelAnimator != null)
             {
-                // Copy the animator controller to root
+                // Copy the avatar from the model
                 if (animator == null)
                 {
                     animator = prefabInstance.AddComponent<Animator>();
                 }
-                animator.runtimeAnimatorController = modelAnimator.runtimeAnimatorController;
                 animator.avatar = modelAnimator.avatar;
                 animator.applyRootMotion = false;
-                Debug.Log($"Copied Animator from model: {modelAnimator.runtimeAnimatorController.name}");
-            }
-            else
-            {
-                Debug.LogWarning("Model has no AnimatorController. You may need to assign one manually.");
+
+                if (modelAnimator.runtimeAnimatorController != null)
+                {
+                    animator.runtimeAnimatorController = modelAnimator.runtimeAnimatorController;
+                    Debug.Log($"Copied Animator from model: {modelAnimator.runtimeAnimatorController.name}");
+                }
+                else
+                {
+                    // Try to create or load a basic animator controller
+                    string controllerPath = "Assets/_Project/Animations/NecromancerController.controller";
+                    AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+
+                    if (controller == null)
+                    {
+                        Debug.LogWarning("No AnimatorController found. Creating a placeholder...\n" +
+                            "To add animations:\n" +
+                            "1. Open Window > Animation > Animator\n" +
+                            "2. Select the Necromancer prefab\n" +
+                            "3. Create states for: Idle, Walk, Attack, Summon, Death\n" +
+                            "4. Add animation clips from the Feyloom FBX or create your own");
+
+                        // Create the Animations folder if it doesn't exist
+                        if (!Directory.Exists("Assets/_Project/Animations"))
+                        {
+                            Directory.CreateDirectory("Assets/_Project/Animations");
+                        }
+
+                        // Create a basic controller with empty states
+                        controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+
+                        // Add parameters that match NecromancerAI's animation triggers
+                        controller.AddParameter("Idle", AnimatorControllerParameterType.Trigger);
+                        controller.AddParameter("Walk", AnimatorControllerParameterType.Trigger);
+                        controller.AddParameter("Attack", AnimatorControllerParameterType.Trigger);
+                        controller.AddParameter("Summon", AnimatorControllerParameterType.Trigger);
+                        controller.AddParameter("Death", AnimatorControllerParameterType.Trigger);
+
+                        Debug.Log($"Created placeholder AnimatorController at: {controllerPath}");
+                    }
+
+                    animator.runtimeAnimatorController = controller;
+                }
             }
         }
         else
         {
             Debug.LogWarning("No 'Model' child found in prefab. Run 'Fix Necromancer Visual' first.");
         }
-
-        // 5. Ensure the prefab has the Player tag as target layer for AI
-        // (This is usually done via layer mask in the AI component)
 
         // Save the prefab
         PrefabUtility.SaveAsPrefabAsset(prefabInstance, prefabPath);
