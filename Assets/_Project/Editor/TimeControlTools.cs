@@ -9,27 +9,27 @@ public class TimeControlTools : EditorWindow
     {
         // Try to find TimeManager settings
         // This might be a ScriptableObject or a component setting
-        
+
         Debug.Log("Looking for TimeManager settings...");
-        
+
         // Search for TimeManager ScriptableObject assets
         string[] guids = AssetDatabase.FindAssets("t:ScriptableObject TimeManager");
-        
+
         foreach (string guid in guids)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
             ScriptableObject asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
-            
+
             if (asset != null)
             {
                 SerializedObject so = new SerializedObject(asset);
-                
+
                 // Try to find start time field
-                SerializedProperty startTime = so.FindProperty("_startTime") 
+                SerializedProperty startTime = so.FindProperty("_startTime")
                     ?? so.FindProperty("startTime")
                     ?? so.FindProperty("_initialTime")
                     ?? so.FindProperty("initialTime");
-                
+
                 if (startTime != null)
                 {
                     // Set to 20:00 (8 PM - nighttime)
@@ -42,10 +42,10 @@ public class TimeControlTools : EditorWindow
                 }
             }
         }
-        
+
         Debug.LogWarning("Could not find TimeManager settings automatically. Try the runtime skip method.");
     }
-    
+
     [MenuItem("Tools/Skip to Night (Runtime)")]
     static void SkipToNight()
     {
@@ -54,29 +54,60 @@ public class TimeControlTools : EditorWindow
             Debug.LogWarning("This tool only works during Play mode. Press Play first, then run this.");
             return;
         }
-        
+
         // Try to find TimeManager in the scene
         TimeManager timeManager = Object.FindObjectOfType<TimeManager>();
-        
+
         if (timeManager != null)
         {
-            SerializedObject so = new SerializedObject(timeManager);
-            
-            SerializedProperty currentTime = so.FindProperty("_currentTime") 
-                ?? so.FindProperty("currentTime")
-                ?? so.FindProperty("_timeOfDay")
-                ?? so.FindProperty("timeOfDay");
-            
-            if (currentTime != null)
-            {
-                currentTime.floatValue = 20f; // 8 PM
-                so.ApplyModifiedProperties();
-                Debug.Log("✓ Skipped to 20:00 (night time)!");
-            }
-            else
-            {
-                Debug.LogError("Could not find time field on TimeManager");
-            }
+            // Use the public SetTimeOfDay method - 0.75 = sunset/night start
+            timeManager.SetTimeOfDay(0.80f); // Just after night starts
+            Debug.Log("✓ Skipped to night time (20:00)!");
+        }
+        else
+        {
+            Debug.LogError("TimeManager not found in scene");
+        }
+    }
+
+    [MenuItem("Tools/Skip to Day (Runtime)")]
+    static void SkipToDay()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning("This tool only works during Play mode. Press Play first, then run this.");
+            return;
+        }
+
+        TimeManager timeManager = Object.FindObjectOfType<TimeManager>();
+
+        if (timeManager != null)
+        {
+            // Use the public SetTimeOfDay method - 0.25 = sunrise/day start
+            timeManager.SetTimeOfDay(0.30f); // Just after day starts
+            Debug.Log("✓ Skipped to day time (07:00)!");
+        }
+        else
+        {
+            Debug.LogError("TimeManager not found in scene");
+        }
+    }
+
+    [MenuItem("Tools/Skip to Next Phase (Runtime)")]
+    static void SkipToNextPhase()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning("This tool only works during Play mode. Press Play first, then run this.");
+            return;
+        }
+
+        TimeManager timeManager = Object.FindObjectOfType<TimeManager>();
+
+        if (timeManager != null)
+        {
+            timeManager.SkipToNextPhase();
+            Debug.Log($"✓ Skipped to {timeManager.CurrentPhase} ({timeManager.GetFormattedTime()})");
         }
         else
         {
@@ -88,27 +119,18 @@ public class TimeControlTools : EditorWindow
 // Runtime component you can add to any GameObject for quick testing
 public class SkipToNightOnStart : MonoBehaviour
 {
-    [SerializeField] private bool skipToNightOnStart = true;
-    [SerializeField] private float nightTime = 20f; // 8 PM
-    
+    [SerializeField] private bool _skipToNightOnStart = true;
+    [SerializeField] private float _nightTime = 0.80f; // Normalized time (0.75 = sunset)
+
     void Start()
     {
-        if (skipToNightOnStart)
+        if (_skipToNightOnStart)
         {
             TimeManager timeManager = FindObjectOfType<TimeManager>();
             if (timeManager != null)
             {
-                // Use reflection to set the time
-                var field = typeof(TimeManager).GetField("_currentTime", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    ?? typeof(TimeManager).GetField("currentTime", 
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                
-                if (field != null)
-                {
-                    field.SetValue(timeManager, nightTime);
-                    Debug.Log($"Skipped to time: {nightTime}:00 (night)");
-                }
+                timeManager.SetTimeOfDay(_nightTime);
+                Debug.Log($"Skipped to time: {timeManager.GetFormattedTime()} (night)");
             }
         }
     }
