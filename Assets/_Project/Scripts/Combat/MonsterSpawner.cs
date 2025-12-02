@@ -212,7 +212,11 @@ namespace VoxelRPG.Combat
                 }
             }
 
-            if (totalWeight <= 0) return _monsterTypes[0];
+            if (totalWeight <= 0)
+            {
+                Debug.Log($"[MonsterSpawner] Selected: {_monsterTypes[0]?.DisplayName} (only option, zero total weight)");
+                return _monsterTypes[0];
+            }
 
             float random = Random.Range(0f, totalWeight);
             float cumulative = 0f;
@@ -223,10 +227,12 @@ namespace VoxelRPG.Combat
                 cumulative += def.SpawnWeight;
                 if (random <= cumulative)
                 {
+                    Debug.Log($"[MonsterSpawner] Selected: {def.DisplayName} (roll: {random:F2}/{totalWeight:F2}, weight: {def.SpawnWeight})");
                     return def;
                 }
             }
 
+            Debug.Log($"[MonsterSpawner] Selected: {_monsterTypes[0]?.DisplayName} (fallback)");
             return _monsterTypes[0];
         }
 
