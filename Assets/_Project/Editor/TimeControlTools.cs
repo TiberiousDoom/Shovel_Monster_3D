@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using VoxelRPG.Core;
+using VoxelRPG.Combat;
 
 public class TimeControlTools : EditorWindow
 {
@@ -56,7 +57,7 @@ public class TimeControlTools : EditorWindow
         }
 
         // Try to find TimeManager in the scene
-        TimeManager timeManager = Object.FindObjectOfType<TimeManager>();
+        TimeManager timeManager = Object.FindFirstObjectByType<TimeManager>();
 
         if (timeManager != null)
         {
@@ -79,7 +80,7 @@ public class TimeControlTools : EditorWindow
             return;
         }
 
-        TimeManager timeManager = Object.FindObjectOfType<TimeManager>();
+        TimeManager timeManager = Object.FindFirstObjectByType<TimeManager>();
 
         if (timeManager != null)
         {
@@ -93,6 +94,54 @@ public class TimeControlTools : EditorWindow
         }
     }
 
+    [MenuItem("Tools/Force Spawn Necromancer (Runtime)")]
+    static void ForceSpawnNecromancer()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning("This tool only works during Play mode. Press Play first, then run this.");
+            return;
+        }
+
+        MonsterSpawner spawner = Object.FindFirstObjectByType<MonsterSpawner>();
+        if (spawner == null)
+        {
+            Debug.LogError("MonsterSpawner not found in scene");
+            return;
+        }
+
+        // Load the Necromancer definition
+        MonsterDefinition necromancerDef = UnityEditor.AssetDatabase.LoadAssetAtPath<MonsterDefinition>(
+            "Assets/_Project/ScriptableObjects/Monsters/SkeletonNecromancer.asset");
+
+        if (necromancerDef == null)
+        {
+            Debug.LogError("SkeletonNecromancer.asset not found!");
+            return;
+        }
+
+        if (necromancerDef.Prefab == null)
+        {
+            Debug.LogError("SkeletonNecromancer definition has no prefab assigned!");
+            return;
+        }
+
+        // Get player position
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        Vector3 spawnPos = player != null ? player.transform.position + player.transform.forward * 5f : Vector3.zero;
+        spawnPos.y += 1f;
+
+        GameObject monster = spawner.SpawnMonster(necromancerDef, spawnPos);
+        if (monster != null)
+        {
+            Debug.Log($"✓ Force spawned Necromancer at {spawnPos}");
+        }
+        else
+        {
+            Debug.LogError("Failed to spawn Necromancer - check prefab and definition");
+        }
+    }
+
     [MenuItem("Tools/Skip to Next Phase (Runtime)")]
     static void SkipToNextPhase()
     {
@@ -102,7 +151,7 @@ public class TimeControlTools : EditorWindow
             return;
         }
 
-        TimeManager timeManager = Object.FindObjectOfType<TimeManager>();
+        TimeManager timeManager = Object.FindFirstObjectByType<TimeManager>();
 
         if (timeManager != null)
         {
@@ -126,7 +175,7 @@ public class SkipToNightOnStart : MonoBehaviour
     {
         if (_skipToNightOnStart)
         {
-            TimeManager timeManager = FindObjectOfType<TimeManager>();
+            TimeManager timeManager = FindFirstObjectByType<TimeManager>();
             if (timeManager != null)
             {
                 timeManager.SetTimeOfDay(_nightTime);

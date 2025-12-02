@@ -7,7 +7,7 @@ public class QuickConfigureSpawner
     [MenuItem("Tools/Quick Configure Spawner")]
     public static void Configure()
     {
-        MonsterSpawner spawner = Object.FindObjectOfType<MonsterSpawner>();
+        MonsterSpawner spawner = Object.FindFirstObjectByType<MonsterSpawner>();
         if (spawner == null)
         {
             Debug.LogError("No MonsterSpawner found!");
