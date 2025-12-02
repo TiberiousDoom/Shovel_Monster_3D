@@ -185,24 +185,19 @@ namespace VoxelRPG.Voxel
             return false;
         }
 
-        // Small offset to prevent z-fighting at block boundaries
-        private const float FACE_OFFSET = 0.001f;
-
         private void AddFace(Vector3 blockPos, int faceIndex, Color color)
         {
             int vertexStart = _vertices.Count;
 
-            // Add vertices with small offset along normal to prevent z-fighting
             var faceVerts = FaceVertices[faceIndex];
             var normal = FaceNormals[faceIndex];
-            var offset = normal * FACE_OFFSET;
 
             // Scale by BLOCK_SIZE for smaller/larger blocks
             float blockSize = VoxelChunk.BLOCK_SIZE;
 
             for (int i = 0; i < 4; i++)
             {
-                _vertices.Add((blockPos + faceVerts[i]) * blockSize + offset);
+                _vertices.Add((blockPos + faceVerts[i]) * blockSize);
                 _normals.Add(normal);
                 _colors.Add(color);
             }
