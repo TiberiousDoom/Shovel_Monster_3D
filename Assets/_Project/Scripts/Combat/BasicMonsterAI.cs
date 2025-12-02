@@ -608,9 +608,26 @@ namespace VoxelRPG.Combat
 
         private void CheckGrounded()
         {
-            // Raycast down to check for ground
-            Vector3 rayStart = transform.position + Vector3.up * 0.1f;
-            _isGrounded = Physics.Raycast(rayStart, Vector3.down, 0.3f, _groundLayer);
+            // Raycast down to check for ground (ignore self)
+            Vector3 rayStart = transform.position + Vector3.up * 0.5f;
+            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 1f, _groundLayer))
+            {
+                // Make sure we didn't hit ourselves
+                if (hit.collider != null && !hit.collider.transform.IsChildOf(transform) && hit.collider.transform != transform)
+                {
+                    _isGrounded = true;
+                    // Snap to ground if we're close
+                    float groundY = hit.point.y;
+                    if (transform.position.y < groundY + 0.1f && transform.position.y > groundY - 0.5f)
+                    {
+                        Vector3 pos = transform.position;
+                        pos.y = groundY;
+                        transform.position = pos;
+                    }
+                    return;
+                }
+            }
+            _isGrounded = false;
         }
 
         private bool CanStepUp(Vector3 direction)

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AI;
 using VoxelRPG.Core;
 
 namespace VoxelRPG.Combat
@@ -33,6 +32,9 @@ namespace VoxelRPG.Combat
 
         [Tooltip("Height above ground to spawn")]
         [SerializeField] private float _spawnHeight = 1f;
+
+        [Tooltip("Layer mask for ground detection")]
+        [SerializeField] private LayerMask _groundLayer = -1;
 
         [Header("Despawn Settings")]
         [Tooltip("Distance from player before despawning")]
@@ -267,16 +269,9 @@ namespace VoxelRPG.Combat
 
                 Vector3 testPos = _spawnCenter.position + offset;
 
-                // Try to find valid NavMesh position
-                if (NavMesh.SamplePosition(testPos, out NavMeshHit hit, 10f, NavMesh.AllAreas))
-                {
-                    position = hit.position + Vector3.up * _spawnHeight;
-                    return true;
-                }
-
-                // Fallback: raycast to find ground
+                // Raycast to find ground (start from high above)
                 testPos.y = _spawnCenter.position.y + 50f;
-                if (Physics.Raycast(testPos, Vector3.down, out RaycastHit groundHit, 100f))
+                if (Physics.Raycast(testPos, Vector3.down, out RaycastHit groundHit, 100f, _groundLayer))
                 {
                     position = groundHit.point + Vector3.up * _spawnHeight;
                     return true;
@@ -333,9 +328,17 @@ namespace VoxelRPG.Combat
 
                 Vector3 spawnPos = centerPosition + offset;
 
-                if (NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, groupSpread, NavMesh.AllAreas))
+                // Raycast to find ground
+                Vector3 rayStart = spawnPos + Vector3.up * 10f;
+                if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 20f, _groundLayer))
                 {
-                    SpawnMonster(definition, hit.position + Vector3.up * _spawnHeight);
+                    SpawnMonster(definition, hit.point + Vector3.up * _spawnHeight);
+                }
+                else
+                {
+                    // Fallback to center position height
+                    spawnPos.y = centerPosition.y;
+                    SpawnMonster(definition, spawnPos + Vector3.up * _spawnHeight);
                 }
             }
         }

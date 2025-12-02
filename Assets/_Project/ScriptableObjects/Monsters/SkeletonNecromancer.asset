@@ -12,27 +12,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2566861c5a495f439b0b5766455ca72, type: 3}
   m_Name: SkeletonNecromancer
   m_EditorClassIdentifier: VoxelRPG.Combat::VoxelRPG.Combat.MonsterDefinition
-  _id: 
-  _displayName: 
-  _description: 
-  _maxHealth: 50
-  _attackDamage: 10
-  _attackCooldown: 1.5
-  _attackRange: 2
-  _wanderSpeed: 2
-  _chaseSpeed: 5
-  _detectionRange: 15
-  _loseTargetRange: 25
-  _aggression: 0.8
-  _fleesAtLowHealth: 0
-  _fleeHealthThreshold: 0.2
+  _id: skeleton_necromancer
+  _displayName: Skeleton Necromancer
+  _description: A powerful undead mage that summons skeleton minions.
+  _maxHealth: 80
+  _attackDamage: 15
+  _attackCooldown: 2
+  _attackRange: 8
+  _wanderSpeed: 1.5
+  _chaseSpeed: 3
+  _detectionRange: 20
+  _loseTargetRange: 30
+  _aggression: 0.9
+  _fleesAtLowHealth: 1
+  _fleeHealthThreshold: 0.3
   _attacksStructures: 0
   _nightOnly: 1
   _burnsInDaylight: 0
-  _spawnWeight: 1
+  _spawnWeight: 0.5
   _minGroupSize: 1
-  _maxGroupSize: 3
-  _experienceValue: 10
+  _maxGroupSize: 1
+  _experienceValue: 50
   _attackSound: {fileID: 0}
   _hurtSound: {fileID: 0}
   _deathSound: {fileID: 0}
