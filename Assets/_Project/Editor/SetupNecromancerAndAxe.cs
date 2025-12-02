@@ -516,7 +516,7 @@ public class SetupNecromancerAndAxe : EditorWindow
     static void ConfigureMonsterSpawner()
     {
         // Find MonsterSpawner in scene
-        MonsterSpawner spawner = Object.FindObjectOfType<MonsterSpawner>();
+        MonsterSpawner spawner = Object.FindFirstObjectByType<MonsterSpawner>();
 
         if (spawner == null)
         {

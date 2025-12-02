@@ -137,7 +137,7 @@ public class ConfigureMonsterSystem : EditorWindow
     static void ConfigureMonsterSpawner()
     {
         // Find MonsterSpawner in scene
-        MonsterSpawner spawner = GameObject.FindObjectOfType<MonsterSpawner>();
+        MonsterSpawner spawner = Object.FindFirstObjectByType<MonsterSpawner>();
         
         if (spawner == null)
         {
