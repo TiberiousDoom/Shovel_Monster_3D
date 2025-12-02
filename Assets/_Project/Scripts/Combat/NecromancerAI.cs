@@ -877,7 +877,8 @@ namespace VoxelRPG.Combat
 
         private void SetAnimation(int animHash)
         {
-            if (_animator != null)
+            // Only set animation if we have an animator with a valid controller
+            if (_animator != null && _animator.runtimeAnimatorController != null)
             {
                 _animator.SetTrigger(animHash);
             }
