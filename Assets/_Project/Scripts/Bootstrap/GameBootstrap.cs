@@ -359,7 +359,12 @@ namespace VoxelRPG.Bootstrap
             camera.farClipPlane = 500f;
             camera.fieldOfView = 70f;
 
-            // Add audio listener
+            // Add audio listener (ensure only one exists in scene)
+            var existingListener = FindFirstObjectByType<AudioListener>();
+            if (existingListener != null)
+            {
+                Destroy(existingListener);
+            }
             cameraObject.AddComponent<AudioListener>();
 
             // Add PlayerCamera component
