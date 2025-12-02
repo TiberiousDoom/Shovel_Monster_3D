@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.AI;
 using VoxelRPG.Core;
 
 namespace VoxelRPG.Combat
@@ -7,6 +6,7 @@ namespace VoxelRPG.Combat
     /// <summary>
     /// Necromancer AI that extends basic monster behavior with summoning abilities.
     /// Summons skeleton minions and prefers to stay at range.
+    /// Uses simple transform-based movement with ground detection (no NavMesh required).
     /// </summary>
     [RequireComponent(typeof(MonsterHealth))]
     public class NecromancerAI : MonoBehaviour, IMonsterAI
@@ -23,6 +23,10 @@ namespace VoxelRPG.Combat
         [SerializeField] private float _wanderWaitTime = 3f;
         [SerializeField] private float _preferredCombatDistance = 8f;
         [SerializeField] private float _retreatDistance = 4f;
+        [SerializeField] private LayerMask _groundLayer = -1;
+        [SerializeField] private float _groundCheckDistance = 2f;
+        [SerializeField] private float _gravity = 20f;
+        [SerializeField] private float _stepHeight = 0.5f;
 
         [Header("Summoning")]
         [SerializeField] private GameObject _minionPrefab;
@@ -47,7 +51,6 @@ namespace VoxelRPG.Combat
 
         // Cached components
         private MonsterHealth _health;
-        private NavMeshAgent _navAgent;
         private Animator _animator;
 
         // State tracking
@@ -55,6 +58,13 @@ namespace VoxelRPG.Combat
         private Transform _currentTarget;
         private Vector3 _spawnPosition;
         private Vector3 _wanderDestination;
+
+        // Movement state
+        private Vector3 _currentDestination;
+        private bool _hasDestination;
+        private float _currentSpeed;
+        private float _verticalVelocity;
+        private bool _isGrounded;
 
         // Timers
         private float _stateTimer;
@@ -100,7 +110,6 @@ namespace VoxelRPG.Combat
         private void Awake()
         {
             _health = GetComponent<MonsterHealth>();
-            _navAgent = GetComponent<NavMeshAgent>();
             _animator = GetComponent<Animator>();
 
             if (_attackPoint == null)
@@ -187,6 +196,9 @@ namespace VoxelRPG.Combat
                     UpdateStunned();
                     break;
             }
+
+            // Apply movement towards destination
+            MoveTowardsDestination();
         }
 
         private void UpdateTimers()
@@ -209,10 +221,7 @@ namespace VoxelRPG.Combat
                 _health.Initialize(definition);
             }
 
-            if (_navAgent != null)
-            {
-                _navAgent.speed = definition.WanderSpeed;
-            }
+            _currentSpeed = definition.WanderSpeed;
 
             Debug.Log($"[NecromancerAI] Initialized: {definition.DisplayName}");
         }
@@ -271,11 +280,7 @@ namespace VoxelRPG.Combat
             ChangeState(MonsterState.Dead);
 
             // Stop movement
-            if (_navAgent != null && _navAgent.isOnNavMesh)
-            {
-                _navAgent.isStopped = true;
-                _navAgent.enabled = false;
-            }
+            _hasDestination = false;
 
             // Play death animation
             if (_animator != null)
@@ -324,18 +329,12 @@ namespace VoxelRPG.Combat
 
                 case MonsterState.Wandering:
                     SetNewWanderDestination();
-                    if (_navAgent != null)
-                    {
-                        _navAgent.speed = _definition?.WanderSpeed ?? 2f;
-                    }
+                    _currentSpeed = _definition?.WanderSpeed ?? 2f;
                     SetAnimation(AnimWalk);
                     break;
 
                 case MonsterState.Chasing:
-                    if (_navAgent != null)
-                    {
-                        _navAgent.speed = _definition?.ChaseSpeed ?? 5f;
-                    }
+                    _currentSpeed = _definition?.ChaseSpeed ?? 5f;
                     SetAnimation(AnimWalk);
                     break;
 
@@ -344,20 +343,14 @@ namespace VoxelRPG.Combat
                     break;
 
                 case MonsterState.Fleeing:
-                    if (_navAgent != null)
-                    {
-                        _navAgent.speed = _definition?.ChaseSpeed ?? 5f;
-                    }
+                    _currentSpeed = _definition?.ChaseSpeed ?? 5f;
                     SetFleeDestination();
                     SetAnimation(AnimWalk);
                     break;
 
                 case MonsterState.Returning:
-                    if (_navAgent != null)
-                    {
-                        _navAgent.speed = _definition?.WanderSpeed ?? 2f;
-                        SetDestination(_spawnPosition);
-                    }
+                    _currentSpeed = _definition?.WanderSpeed ?? 2f;
+                    SetDestination(_spawnPosition);
                     SetAnimation(AnimWalk);
                     break;
 
@@ -523,25 +516,23 @@ namespace VoxelRPG.Combat
 
         private void SetDestination(Vector3 destination)
         {
-            if (_navAgent != null && _navAgent.isOnNavMesh)
-            {
-                _navAgent.isStopped = false;
-                _navAgent.SetDestination(destination);
-            }
+            _currentDestination = destination;
+            _hasDestination = true;
         }
 
         private void StopMovement()
         {
-            if (_navAgent != null && _navAgent.isOnNavMesh)
-            {
-                _navAgent.isStopped = true;
-            }
+            _hasDestination = false;
         }
 
         private bool HasReachedDestination()
         {
-            if (_navAgent == null || !_navAgent.isOnNavMesh) return true;
-            return !_navAgent.pathPending && _navAgent.remainingDistance <= _navAgent.stoppingDistance;
+            if (!_hasDestination) return true;
+            float distance = Vector3.Distance(
+                new Vector3(transform.position.x, 0, transform.position.z),
+                new Vector3(_currentDestination.x, 0, _currentDestination.z)
+            );
+            return distance <= 1f;
         }
 
         private void SetNewWanderDestination()
@@ -550,9 +541,16 @@ namespace VoxelRPG.Combat
             randomDir += _spawnPosition;
             randomDir.y = transform.position.y;
 
-            if (NavMesh.SamplePosition(randomDir, out NavMeshHit hit, _wanderRadius, NavMesh.AllAreas))
+            // Sample ground position
+            if (SampleGroundPosition(randomDir, out Vector3 groundPos))
             {
-                _wanderDestination = hit.position;
+                _wanderDestination = groundPos;
+                SetDestination(_wanderDestination);
+            }
+            else
+            {
+                // Fallback to current height
+                _wanderDestination = randomDir;
                 SetDestination(_wanderDestination);
             }
         }
@@ -568,10 +566,96 @@ namespace VoxelRPG.Combat
             Vector3 fleeDir = (transform.position - _currentTarget.position).normalized;
             Vector3 fleePoint = transform.position + fleeDir * 10f;
 
-            if (NavMesh.SamplePosition(fleePoint, out NavMeshHit hit, 10f, NavMesh.AllAreas))
+            if (SampleGroundPosition(fleePoint, out Vector3 groundPos))
             {
-                SetDestination(hit.position);
+                SetDestination(groundPos);
             }
+            else
+            {
+                SetDestination(fleePoint);
+            }
+        }
+
+        private bool SampleGroundPosition(Vector3 position, out Vector3 groundPos)
+        {
+            // Raycast down from above the position to find ground
+            Vector3 rayStart = position + Vector3.up * 10f;
+            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 20f, _groundLayer))
+            {
+                groundPos = hit.point;
+                return true;
+            }
+            groundPos = position;
+            return false;
+        }
+
+        private void MoveTowardsDestination()
+        {
+            if (!_hasDestination) return;
+
+            // Calculate direction to destination (horizontal only)
+            Vector3 direction = _currentDestination - transform.position;
+            direction.y = 0;
+
+            if (direction.sqrMagnitude < 0.01f) return;
+
+            direction.Normalize();
+
+            // Rotate towards movement direction
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
+
+            // Calculate movement
+            Vector3 movement = direction * _currentSpeed * Time.deltaTime;
+
+            // Apply gravity
+            CheckGrounded();
+            if (_isGrounded)
+            {
+                _verticalVelocity = -2f; // Small downward force to stay grounded
+            }
+            else
+            {
+                _verticalVelocity -= _gravity * Time.deltaTime;
+            }
+            movement.y = _verticalVelocity * Time.deltaTime;
+
+            // Check for step-up (small obstacles)
+            if (_isGrounded && CanStepUp(direction))
+            {
+                movement.y = _stepHeight;
+            }
+
+            // Apply movement
+            transform.position += movement;
+        }
+
+        private void CheckGrounded()
+        {
+            // Raycast down to check for ground
+            Vector3 rayStart = transform.position + Vector3.up * 0.1f;
+            _isGrounded = Physics.Raycast(rayStart, Vector3.down, 0.3f, _groundLayer);
+        }
+
+        private bool CanStepUp(Vector3 direction)
+        {
+            // Check if there's a small obstacle we can step over
+            Vector3 feetPos = transform.position + Vector3.up * 0.1f;
+            Vector3 stepPos = feetPos + Vector3.up * _stepHeight;
+
+            // Check if blocked at feet level
+            if (!Physics.Raycast(feetPos, direction, 0.5f, _groundLayer))
+            {
+                return false; // Nothing to step over
+            }
+
+            // Check if clear at step height
+            if (Physics.Raycast(stepPos, direction, 0.5f, _groundLayer))
+            {
+                return false; // Blocked at step height too
+            }
+
+            return true;
         }
 
         private void ApplyKnockback()
@@ -732,28 +816,31 @@ namespace VoxelRPG.Combat
             Vector3 spawnPos = _summonPoint.position + Random.insideUnitSphere * _summonRadius;
             spawnPos.y = transform.position.y;
 
-            if (NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, _summonRadius * 2, NavMesh.AllAreas))
+            // Sample ground position for spawning
+            if (SampleGroundPosition(spawnPos, out Vector3 groundPos))
             {
-                GameObject minion = Instantiate(_minionPrefab, hit.position, Quaternion.identity);
-
-                // Set minion's target to our target
-                var minionAI = minion.GetComponent<IMonsterAI>();
-                if (minionAI != null && _currentTarget != null)
-                {
-                    minionAI.SetTarget(_currentTarget);
-                }
-
-                // Track minion death
-                var minionHealth = minion.GetComponent<MonsterHealth>();
-                if (minionHealth != null)
-                {
-                    minionHealth.OnDeath += () => OnMinionDeath();
-                }
-
-                _activeMinions++;
-
-                Debug.Log($"[NecromancerAI] Summoned minion! Active: {_activeMinions}/{_maxMinions}");
+                spawnPos = groundPos;
             }
+
+            GameObject minion = Instantiate(_minionPrefab, spawnPos, Quaternion.identity);
+
+            // Set minion's target to our target
+            var minionAI = minion.GetComponent<IMonsterAI>();
+            if (minionAI != null && _currentTarget != null)
+            {
+                minionAI.SetTarget(_currentTarget);
+            }
+
+            // Track minion death
+            var minionHealth = minion.GetComponent<MonsterHealth>();
+            if (minionHealth != null)
+            {
+                minionHealth.OnDeath += () => OnMinionDeath();
+            }
+
+            _activeMinions++;
+
+            Debug.Log($"[NecromancerAI] Summoned minion! Active: {_activeMinions}/{_maxMinions}");
         }
 
         #endregion
