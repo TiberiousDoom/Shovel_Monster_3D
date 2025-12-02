@@ -135,13 +135,17 @@ namespace VoxelRPG.Player
         private Vector3Int GetBlockPositionFromHit(Vector3 hitPoint, Vector3 normal, bool forPlacement)
         {
             // Offset into or out of the block based on whether we're breaking or placing
-            Vector3 offset = forPlacement ? normal * 0.5f : -normal * 0.5f;
-            Vector3 blockCenter = hitPoint + offset;
+            // Scale offset by half of BLOCK_SIZE to move into the correct block
+            float halfBlock = VoxelChunk.BLOCK_SIZE * 0.5f;
+            Vector3 offset = forPlacement ? normal * halfBlock : -normal * halfBlock;
+            Vector3 offsetPoint = hitPoint + offset;
 
+            // Convert from Unity world coordinates to block coordinates
+            // by dividing by BLOCK_SIZE
             return new Vector3Int(
-                Mathf.FloorToInt(blockCenter.x),
-                Mathf.FloorToInt(blockCenter.y),
-                Mathf.FloorToInt(blockCenter.z)
+                Mathf.FloorToInt(offsetPoint.x / VoxelChunk.BLOCK_SIZE),
+                Mathf.FloorToInt(offsetPoint.y / VoxelChunk.BLOCK_SIZE),
+                Mathf.FloorToInt(offsetPoint.z / VoxelChunk.BLOCK_SIZE)
             );
         }
 
@@ -246,10 +250,12 @@ namespace VoxelRPG.Player
         {
             if (_characterController == null) return false;
 
-            // Get the block's bounding box (blocks are 1x1x1 cubes)
-            var blockMin = new Vector3(blockPosition.x, blockPosition.y, blockPosition.z);
-            var blockMax = blockMin + Vector3.one;
-            var blockBounds = new Bounds((blockMin + blockMax) * 0.5f, Vector3.one);
+            // Get the block's bounding box in Unity world coordinates
+            // Block positions are in block coords, multiply by BLOCK_SIZE for world coords
+            float bs = VoxelChunk.BLOCK_SIZE;
+            var blockMin = new Vector3(blockPosition.x * bs, blockPosition.y * bs, blockPosition.z * bs);
+            var blockMax = blockMin + Vector3.one * bs;
+            var blockBounds = new Bounds((blockMin + blockMax) * 0.5f, Vector3.one * bs);
 
             // Get player's bounding box from CharacterController
             var playerCenter = _characterController.transform.position + _characterController.center;
