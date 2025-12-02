@@ -204,6 +204,7 @@ namespace VoxelRPG.Bootstrap
             // Check if player already exists
             if (FindFirstObjectByType<PlayerController>() != null)
             {
+                ConfigureSpawnerWithPlayer();
                 return;
             }
 
@@ -219,6 +220,9 @@ namespace VoxelRPG.Bootstrap
             {
                 CreateDefaultPlayer(spawnPos);
             }
+
+            // Configure monster spawner with player reference
+            ConfigureSpawnerWithPlayer();
         }
 
         private Vector3 CalculateSpawnPosition()
@@ -526,17 +530,38 @@ namespace VoxelRPG.Bootstrap
         private void SetupMonsterSpawner()
         {
             // Check if MonsterSpawner already exists
-            if (FindFirstObjectByType<MonsterSpawner>() != null)
+            var spawner = FindFirstObjectByType<MonsterSpawner>();
+            if (spawner == null)
             {
-                return;
+                // Create MonsterSpawner
+                var spawnerObject = new GameObject("MonsterSpawner");
+                spawner = spawnerObject.AddComponent<MonsterSpawner>();
+                Debug.Log("[GameBootstrap] Created MonsterSpawner.");
             }
 
-            // Create MonsterSpawner
-            var spawnerObject = new GameObject("MonsterSpawner");
-            var spawner = spawnerObject.AddComponent<MonsterSpawner>();
+            // Configure monster types if we have any
+            if (_monsterTypes != null && _monsterTypes.Length > 0)
+            {
+                spawner.SetMonsterTypes(_monsterTypes);
+            }
+            else
+            {
+                Debug.LogWarning("[GameBootstrap] No monster types configured for spawner!");
+            }
+        }
 
-            // Monster types will be set via inspector since we need prefab references
-            Debug.Log("[GameBootstrap] Created MonsterSpawner.");
+        /// <summary>
+        /// Called after player is created to finish spawner setup.
+        /// </summary>
+        private void ConfigureSpawnerWithPlayer()
+        {
+            var spawner = FindFirstObjectByType<MonsterSpawner>();
+            var player = GameObject.FindGameObjectWithTag("Player");
+
+            if (spawner != null && player != null)
+            {
+                spawner.SetSpawnCenter(player.transform);
+            }
         }
 
         private void SetupUI()
