@@ -120,13 +120,26 @@ namespace VoxelRPG.Combat
             DespawnDistantMonsters();
 
             // Spawn check
-            if (CanSpawn && _spawnCenter != null)
+            if (_spawnCenter != null)
             {
-                _spawnTimer -= Time.deltaTime;
-                if (_spawnTimer <= 0)
+                if (CanSpawn)
                 {
-                    _spawnTimer = _spawnInterval;
-                    TrySpawnMonsters();
+                    _spawnTimer -= Time.deltaTime;
+                    if (_spawnTimer <= 0)
+                    {
+                        _spawnTimer = _spawnInterval;
+                        TrySpawnMonsters();
+                    }
+                }
+            }
+            else
+            {
+                // Try to find player if spawn center not set
+                var player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null)
+                {
+                    _spawnCenter = player.transform;
+                    Debug.Log($"[MonsterSpawner] Found player, setting as spawn center");
                 }
             }
         }
@@ -264,6 +277,7 @@ namespace VoxelRPG.Combat
                 }
             }
 
+            Debug.LogWarning("[MonsterSpawner] Failed to find spawn position after 10 attempts");
             return false;
         }
 
@@ -377,6 +391,25 @@ namespace VoxelRPG.Combat
         public void SetSpawnCenter(Transform center)
         {
             _spawnCenter = center;
+            Debug.Log($"[MonsterSpawner] Spawn center set to: {center?.name ?? "null"}");
+        }
+
+        /// <summary>
+        /// Sets the monster types that can spawn.
+        /// </summary>
+        public void SetMonsterTypes(MonsterDefinition[] monsterTypes)
+        {
+            _monsterTypes = monsterTypes;
+            Debug.Log($"[MonsterSpawner] Monster types set: {monsterTypes?.Length ?? 0} types");
+        }
+
+        /// <summary>
+        /// Enables or disables force spawning (ignores day/night).
+        /// </summary>
+        public void SetForceSpawning(bool force)
+        {
+            _forceSpawning = force;
+            Debug.Log($"[MonsterSpawner] Force spawning: {force}");
         }
 
 #if UNITY_EDITOR
