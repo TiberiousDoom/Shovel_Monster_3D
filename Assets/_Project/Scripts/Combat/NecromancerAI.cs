@@ -82,12 +82,12 @@ namespace VoxelRPG.Combat
         // Time manager reference for daylight check
         private TimeManager _timeManager;
 
-        // Animator hashes
-        private static readonly int AnimIdle = Animator.StringToHash("Idle");
-        private static readonly int AnimWalk = Animator.StringToHash("Walk");
-        private static readonly int AnimAttack = Animator.StringToHash("Attack");
-        private static readonly int AnimSummon = Animator.StringToHash("Summon");
-        private static readonly int AnimDeath = Animator.StringToHash("Death");
+        // Animator hashes - triggers
+        private static readonly int AnimIsAttacking = Animator.StringToHash("IsAttacking");
+        private static readonly int AnimIsSummoning = Animator.StringToHash("IsSummoning");
+        private static readonly int AnimIsDead = Animator.StringToHash("IsDead");
+        // Animator hashes - bools
+        private static readonly int AnimIsMoving = Animator.StringToHash("IsMoving");
 
         /// <inheritdoc/>
         public MonsterDefinition Definition => _definition;
@@ -323,38 +323,41 @@ namespace VoxelRPG.Combat
             {
                 case MonsterState.Idle:
                     StopMovement();
-                    SetAnimation(AnimIdle);
+                    SetMoving(false);
                     break;
 
                 case MonsterState.Wandering:
                     SetNewWanderDestination();
                     _currentSpeed = _definition?.WanderSpeed ?? 2f;
-                    SetAnimation(AnimWalk);
+                    SetMoving(true);
                     break;
 
                 case MonsterState.Chasing:
                     _currentSpeed = _definition?.ChaseSpeed ?? 5f;
-                    SetAnimation(AnimWalk);
+                    SetMoving(true);
                     break;
 
                 case MonsterState.Attacking:
                     StopMovement();
+                    SetMoving(false);
                     break;
 
                 case MonsterState.Fleeing:
                     _currentSpeed = _definition?.ChaseSpeed ?? 5f;
                     SetFleeDestination();
-                    SetAnimation(AnimWalk);
+                    SetMoving(true);
                     break;
 
                 case MonsterState.Returning:
                     _currentSpeed = _definition?.WanderSpeed ?? 2f;
                     SetDestination(_spawnPosition);
-                    SetAnimation(AnimWalk);
+                    SetMoving(true);
                     break;
 
                 case MonsterState.Dead:
                     StopMovement();
+                    SetMoving(false);
+                    SetTrigger(AnimIsDead);
                     break;
             }
         }
@@ -750,7 +753,7 @@ namespace VoxelRPG.Combat
             _attackCooldownTimer = _definition.AttackCooldown;
 
             ChangeState(MonsterState.Attacking);
-            SetAnimation(AnimAttack);
+            SetTrigger(AnimIsAttacking);
 
             // Play cast effect
             if (_castEffect != null)
@@ -821,7 +824,7 @@ namespace VoxelRPG.Combat
             _summonCooldownTimer = _summonCooldown;
 
             // Play summon animation and effect
-            SetAnimation(AnimSummon);
+            SetTrigger(AnimIsSummoning);
             if (_summonEffect != null)
             {
                 _summonEffect.Play();
@@ -875,9 +878,18 @@ namespace VoxelRPG.Combat
 
         #region Animation
 
-        private void SetAnimation(int animHash)
+        private void SetMoving(bool isMoving)
         {
-            // Only set animation if we have an animator with a valid controller
+            // Set the IsMoving bool parameter for walk/idle animation
+            if (_animator != null && _animator.runtimeAnimatorController != null)
+            {
+                _animator.SetBool(AnimIsMoving, isMoving);
+            }
+        }
+
+        private void SetTrigger(int animHash)
+        {
+            // Only set animation trigger if we have an animator with a valid controller
             if (_animator != null && _animator.runtimeAnimatorController != null)
             {
                 _animator.SetTrigger(animHash);
