@@ -24,21 +24,21 @@ namespace VoxelRPG.Combat
         [SerializeField] private int _spawnsPerEvent = 1;
 
         [Header("Spawn Distance")]
-        [Tooltip("Minimum distance from player to spawn")]
-        [SerializeField] private float _minSpawnDistance = 20f;
+        [Tooltip("Minimum distance from player to spawn (in Unity units)")]
+        [SerializeField] private float _minSpawnDistance = 5f;
 
-        [Tooltip("Maximum distance from player to spawn")]
-        [SerializeField] private float _maxSpawnDistance = 40f;
+        [Tooltip("Maximum distance from player to spawn (in Unity units)")]
+        [SerializeField] private float _maxSpawnDistance = 12f;
 
         [Tooltip("Height above ground to spawn")]
-        [SerializeField] private float _spawnHeight = 1f;
+        [SerializeField] private float _spawnHeight = 0.5f;
 
         [Tooltip("Layer mask for ground detection")]
         [SerializeField] private LayerMask _groundLayer = -1;
 
         [Header("Despawn Settings")]
         [Tooltip("Distance from player before despawning")]
-        [SerializeField] private float _despawnDistance = 60f;
+        [SerializeField] private float _despawnDistance = 20f;
 
         [Tooltip("Whether to despawn monsters at dawn")]
         [SerializeField] private bool _despawnAtDawn = true;
@@ -259,7 +259,9 @@ namespace VoxelRPG.Combat
             {
                 // Random angle around player
                 float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                float distance = Random.Range(_minSpawnDistance, _maxSpawnDistance);
+                // Try progressively closer distances if failing
+                float distanceScale = 1f - (attempt * 0.08f); // Reduce distance each attempt
+                float distance = Random.Range(_minSpawnDistance, _maxSpawnDistance) * distanceScale;
 
                 Vector3 offset = new Vector3(
                     Mathf.Cos(angle) * distance,
@@ -269,17 +271,32 @@ namespace VoxelRPG.Combat
 
                 Vector3 testPos = _spawnCenter.position + offset;
 
-                // Raycast to find ground (start from high above)
-                testPos.y = _spawnCenter.position.y + 50f;
-                if (Physics.Raycast(testPos, Vector3.down, out RaycastHit groundHit, 100f, _groundLayer))
+                // Try to find valid NavMesh position
+                if (NavMesh.SamplePosition(testPos, out NavMeshHit hit, 10f, NavMesh.AllAreas))
+                {
+                    position = hit.position + Vector3.up * _spawnHeight;
+                    return true;
+                }
+
+                // Fallback: raycast to find ground
+                testPos.y = _spawnCenter.position.y + 20f;
+                if (Physics.Raycast(testPos, Vector3.down, out RaycastHit groundHit, 50f))
                 {
                     position = groundHit.point + Vector3.up * _spawnHeight;
                     return true;
                 }
             }
 
-            Debug.LogWarning("[MonsterSpawner] Failed to find spawn position after 10 attempts");
-            return false;
+            // Final fallback: spawn at player's Y level nearby
+            float fallbackAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float fallbackDist = _minSpawnDistance;
+            position = _spawnCenter.position + new Vector3(
+                Mathf.Cos(fallbackAngle) * fallbackDist,
+                _spawnHeight,
+                Mathf.Sin(fallbackAngle) * fallbackDist
+            );
+            Debug.Log($"[MonsterSpawner] Using fallback spawn position: {position}");
+            return true;
         }
 
         /// <summary>
