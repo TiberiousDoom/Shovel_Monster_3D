@@ -63,6 +63,10 @@ namespace VoxelRPG.Combat
             {
                 Debug.LogWarning($"[Hurtbox] No IDamageable found on {gameObject.name} or parent!");
             }
+            else
+            {
+                Debug.Log($"[Hurtbox] Found IDamageable on {gameObject.name}: {_damageable.GetType().Name} (HP: {_damageable.CurrentHealth}/{_damageable.MaxHealth})");
+            }
         }
 
         /// <summary>
@@ -92,11 +96,15 @@ namespace VoxelRPG.Combat
         {
             if (!_isActive || _damageable == null || !_damageable.IsAlive)
             {
+                Debug.Log($"[Hurtbox] ApplyDamage blocked: active={_isActive}, damageable={((_damageable != null) ? _damageable.GetType().Name : "null")}, alive={_damageable?.IsAlive}");
                 return 0f;
             }
 
+            float healthBefore = _damageable.CurrentHealth;
             float finalDamage = baseDamage * _damageMultiplier;
-            return _damageable.TakeDamage(finalDamage, source);
+            float actualDamage = _damageable.TakeDamage(finalDamage, source);
+            Debug.Log($"[Hurtbox] Applied {finalDamage} damage to {_damageable.GetType().Name}: {healthBefore} -> {_damageable.CurrentHealth} (actual: {actualDamage})");
+            return actualDamage;
         }
 
 #if UNITY_EDITOR
