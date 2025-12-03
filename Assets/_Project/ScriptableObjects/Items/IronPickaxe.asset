@@ -16,7 +16,7 @@ MonoBehaviour:
   _displayName: Iron Pickaxe
   _description: A sturdy pickaxe for mining stone and ore.
   _icon: {fileID: 0}
-  _dropPrefab: {fileID: 0}
+  _dropPrefab: {fileID: 100100000, guid: ac3542d5326b40878b906fe4de900c6a, type: 3}
   _maxStackSize: 1
   _category: 2
   _isConsumable: 0
