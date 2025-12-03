@@ -7,6 +7,7 @@ using System.IO;
 /// <summary>
 /// Editor tool to fix the SkeletonNecromancer prefab.
 /// Removes NavMeshAgent, sets up proper Animator, and configures collider.
+/// Updated to use Built-in render pipeline prefabs.
 /// </summary>
 public class FixNecromancerPrefab
 {
@@ -56,65 +57,62 @@ public class FixNecromancerPrefab
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
         Debug.Log("Configured Rigidbody");
 
-        // 4. Find and setup Animator from model
+        // 4. Find and setup Animator
         Animator animator = prefabInstance.GetComponent<Animator>();
         Transform modelTransform = prefabInstance.transform.Find("Model");
 
+        // Always load the NecromancerController (with Kevin Iglesias animations)
+        string controllerPath = "Assets/_Project/Animations/NecromancerController.controller";
+        AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+
+        if (controller == null)
+        {
+            Debug.LogError($"NecromancerController not found at {controllerPath}! Run 'Tools > Create Necromancer Animator Controller' first.");
+        }
+
         if (modelTransform != null)
         {
-            // Check if model has an animator with controller
+            // Get avatar from the model's SkinnedMeshRenderer hierarchy
             Animator modelAnimator = modelTransform.GetComponentInChildren<Animator>();
-            if (modelAnimator != null)
+            Avatar avatar = modelAnimator?.avatar;
+
+            // If no animator on model, try to get avatar from the FBX directly
+            if (avatar == null)
             {
-                // Copy the avatar from the model
-                if (animator == null)
+                // Try loading avatar from Feyloom FBX
+                string fbxPath = "Assets/Feyloom/Skeleton_Necromancer/Mesh/SKM_Skeleton_Necromancer.fbx";
+                GameObject fbx = AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath);
+                if (fbx != null)
                 {
-                    animator = prefabInstance.AddComponent<Animator>();
-                }
-                animator.avatar = modelAnimator.avatar;
-                animator.applyRootMotion = false;
-
-                if (modelAnimator.runtimeAnimatorController != null)
-                {
-                    animator.runtimeAnimatorController = modelAnimator.runtimeAnimatorController;
-                    Debug.Log($"Copied Animator from model: {modelAnimator.runtimeAnimatorController.name}");
-                }
-                else
-                {
-                    // Try to create or load a basic animator controller
-                    string controllerPath = "Assets/_Project/Animations/NecromancerController.controller";
-                    AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
-
-                    if (controller == null)
+                    Animator fbxAnimator = fbx.GetComponent<Animator>();
+                    if (fbxAnimator != null)
                     {
-                        Debug.LogWarning("No AnimatorController found. Creating a placeholder...\n" +
-                            "To add animations:\n" +
-                            "1. Open Window > Animation > Animator\n" +
-                            "2. Select the Necromancer prefab\n" +
-                            "3. Create states for: Idle, Walk, Attack, Summon, Death\n" +
-                            "4. Add animation clips from the Feyloom FBX or create your own");
-
-                        // Create the Animations folder if it doesn't exist
-                        if (!Directory.Exists("Assets/_Project/Animations"))
-                        {
-                            Directory.CreateDirectory("Assets/_Project/Animations");
-                        }
-
-                        // Create a basic controller with empty states
-                        controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
-
-                        // Add parameters that match NecromancerAI's animation triggers
-                        controller.AddParameter("Idle", AnimatorControllerParameterType.Trigger);
-                        controller.AddParameter("Walk", AnimatorControllerParameterType.Trigger);
-                        controller.AddParameter("Attack", AnimatorControllerParameterType.Trigger);
-                        controller.AddParameter("Summon", AnimatorControllerParameterType.Trigger);
-                        controller.AddParameter("Death", AnimatorControllerParameterType.Trigger);
-
-                        Debug.Log($"Created placeholder AnimatorController at: {controllerPath}");
+                        avatar = fbxAnimator.avatar;
+                        Debug.Log($"Got avatar from FBX: {avatar?.name ?? "null"}");
                     }
-
-                    animator.runtimeAnimatorController = controller;
                 }
+            }
+
+            // Ensure we have an animator on the root
+            if (animator == null)
+            {
+                animator = prefabInstance.AddComponent<Animator>();
+            }
+
+            animator.avatar = avatar;
+            animator.applyRootMotion = false;
+
+            if (controller != null)
+            {
+                animator.runtimeAnimatorController = controller;
+                Debug.Log($"Assigned NecromancerController to prefab (avatar: {avatar?.name ?? "null"})");
+            }
+
+            // Remove any animator on the child model to avoid conflicts
+            if (modelAnimator != null && modelAnimator != animator)
+            {
+                Object.DestroyImmediate(modelAnimator);
+                Debug.Log("Removed duplicate Animator from child Model");
             }
         }
         else
@@ -145,29 +143,28 @@ public class FixNecromancerPrefab
             return;
         }
 
-        // Try to find the Feyloom model (check multiple possible paths)
-        string[] possiblePaths = new[]
-        {
-            "Assets/Feyloom/Skeleton_Necromancer/Renders/URP/Prefab/SKM_Skeleton_Necromancer.prefab",
-            "Assets/Feyloom/Skeleton_Necromancer/Prefab/SKM_Skeleton_Necromancer.prefab",
-            "Assets/Feyloom/Skeleton Necromancer/Renders/URP/Prefab/SKM_Skeleton_Necromancer.prefab"
-        };
+        // Use Built-in render pipeline prefab (not URP - causes pink materials)
+        string builtInPath = "Assets/Feyloom/Skeleton_Necromancer/Renders/Built-in/Prefab/SKM_Skeleton_Necromancer.prefab";
+        GameObject feyloomModel = AssetDatabase.LoadAssetAtPath<GameObject>(builtInPath);
 
-        GameObject feyloomModel = null;
-        foreach (var path in possiblePaths)
+        if (feyloomModel != null)
         {
-            feyloomModel = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            Debug.Log($"Using Built-in prefab: {builtInPath}");
+        }
+        else
+        {
+            // Fallback to URP if Built-in not found
+            string urpPath = "Assets/Feyloom/Skeleton_Necromancer/Renders/URP/Prefab/SKM_Skeleton_Necromancer.prefab";
+            feyloomModel = AssetDatabase.LoadAssetAtPath<GameObject>(urpPath);
             if (feyloomModel != null)
             {
-                Debug.Log($"Found Feyloom model at: {path}");
-                break;
+                Debug.LogWarning($"Built-in prefab not found, falling back to URP: {urpPath}");
             }
         }
 
         if (feyloomModel == null)
         {
-            Debug.LogError("Feyloom SKM_Skeleton_Necromancer prefab not found! Searched paths:\n" +
-                string.Join("\n", possiblePaths));
+            Debug.LogError("Feyloom SKM_Skeleton_Necromancer prefab not found!");
             return;
         }
 
@@ -205,5 +202,131 @@ public class FixNecromancerPrefab
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
+    }
+
+    [MenuItem("Tools/Fix Necromancer Staff")]
+    static void FixStaff()
+    {
+        string prefabPath = "Assets/_Project/Prefabs/Enemies/SkeletonNecromancer.prefab";
+        GameObject necromancerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+
+        if (necromancerPrefab == null)
+        {
+            Debug.LogError("SkeletonNecromancer prefab not found!");
+            return;
+        }
+
+        // Load the staff prefab - use Built-in
+        string staffPrefabPath = "Assets/Feyloom/Skeleton_Necromancer/Renders/Built-in/Prefab/SM_Staff.prefab";
+        GameObject staffPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(staffPrefabPath);
+
+        if (staffPrefab == null)
+        {
+            Debug.LogError($"Staff prefab not found at: {staffPrefabPath}");
+            return;
+        }
+
+        // Open prefab for editing
+        GameObject prefabInstance = PrefabUtility.LoadPrefabContents(prefabPath);
+
+        // Find the model
+        Transform modelTransform = prefabInstance.transform.Find("Model");
+        if (modelTransform == null)
+        {
+            Debug.LogError("No 'Model' child found. Run 'Fix Necromancer Visual' first.");
+            PrefabUtility.UnloadPrefabContents(prefabInstance);
+            return;
+        }
+
+        // Find the right hand bone - common bone names to try
+        string[] handBoneNames = new[]
+        {
+            "Hand_R", "hand_R", "RightHand", "hand.R", "Hand.R",
+            "mixamorig:RightHand", "Bip001 R Hand", "R Hand",
+            "Right_Hand", "right_hand"
+        };
+
+        Transform handBone = null;
+        foreach (string boneName in handBoneNames)
+        {
+            handBone = FindChildRecursive(modelTransform, boneName);
+            if (handBone != null)
+            {
+                Debug.Log($"Found hand bone: {handBone.name}");
+                break;
+            }
+        }
+
+        if (handBone == null)
+        {
+            // List all bones to help debug
+            Debug.LogWarning("Could not find hand bone. Listing all transforms in model:");
+            ListAllChildren(modelTransform, 0);
+            PrefabUtility.UnloadPrefabContents(prefabInstance);
+            return;
+        }
+
+        // Remove existing staff if present
+        Transform existingStaff = FindChildRecursive(prefabInstance.transform, "Staff");
+        if (existingStaff != null)
+        {
+            Object.DestroyImmediate(existingStaff.gameObject);
+            Debug.Log("Removed existing Staff");
+        }
+
+        // Also remove any staff that might be in the model
+        Transform modelStaff = FindChildRecursive(modelTransform, "SM_Staff");
+        if (modelStaff != null)
+        {
+            Object.DestroyImmediate(modelStaff.gameObject);
+            Debug.Log("Removed existing SM_Staff from model");
+        }
+
+        // Instantiate the staff and parent to hand
+        GameObject staffInstance = (GameObject)PrefabUtility.InstantiatePrefab(staffPrefab, handBone);
+        staffInstance.name = "Staff";
+
+        // Position the staff in hand (these values may need adjustment based on the model)
+        staffInstance.transform.localPosition = Vector3.zero;
+        staffInstance.transform.localRotation = Quaternion.identity;
+        staffInstance.transform.localScale = Vector3.one;
+
+        Debug.Log($"Attached staff to {handBone.name}");
+
+        // Save the prefab
+        PrefabUtility.SaveAsPrefabAsset(prefabInstance, prefabPath);
+        PrefabUtility.UnloadPrefabContents(prefabInstance);
+
+        Debug.Log("Successfully added staff to SkeletonNecromancer!");
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+    }
+
+    static Transform FindChildRecursive(Transform parent, string name)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.name == name || child.name.Contains(name))
+            {
+                return child;
+            }
+            Transform found = FindChildRecursive(child, name);
+            if (found != null)
+            {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    static void ListAllChildren(Transform parent, int depth)
+    {
+        string indent = new string(' ', depth * 2);
+        Debug.Log($"{indent}{parent.name}");
+        foreach (Transform child in parent)
+        {
+            ListAllChildren(child, depth + 1);
+        }
     }
 }

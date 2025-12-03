@@ -7,6 +7,7 @@ namespace VoxelRPG.Combat
     /// Necromancer AI that extends basic monster behavior with summoning abilities.
     /// Summons skeleton minions and prefers to stay at range.
     /// Uses simple transform-based movement with ground detection (no NavMesh required).
+    /// Animation: Uses IsMoving bool for walk/idle transitions.
     /// </summary>
     [RequireComponent(typeof(MonsterHealth))]
     public class NecromancerAI : MonoBehaviour, IMonsterAI
@@ -40,7 +41,6 @@ namespace VoxelRPG.Combat
         [SerializeField] private float _attackRadius = 1f;
         [SerializeField] private GameObject _projectilePrefab;
         [SerializeField] private float _projectileSpeed = 10f;
-        [SerializeField] private Transform _projectileSpawnPoint;
 
         [Header("Visual Effects")]
         [SerializeField] private ParticleSystem _summonEffect;
@@ -521,11 +521,13 @@ namespace VoxelRPG.Combat
         {
             _currentDestination = destination;
             _hasDestination = true;
+            SetMoving(true);
         }
 
         private void StopMovement()
         {
             _hasDestination = false;
+            SetMoving(false);
         }
 
         private bool HasReachedDestination()
@@ -765,11 +767,10 @@ namespace VoxelRPG.Combat
             // Fire projectile if we have one
             if (_projectilePrefab != null)
             {
-                Vector3 spawnPosition = _projectileSpawnPoint != null ? _projectileSpawnPoint.position : transform.position;
-                Quaternion spawnRotation = _projectileSpawnPoint != null ? _projectileSpawnPoint.rotation : transform.rotation;
-                Vector3 direction = (_currentTarget.position - spawnPosition).normalized;
+                Vector3 spawnPos = _attackPoint.position;
+                Vector3 direction = (_currentTarget.position - spawnPos).normalized;
 
-                GameObject projectile = Instantiate(_projectilePrefab, spawnPosition, spawnRotation);
+                GameObject projectile = Instantiate(_projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
 
                 // Configure projectile damage
                 var hitbox = projectile.GetComponent<Hitbox>();
@@ -885,7 +886,20 @@ namespace VoxelRPG.Combat
             // Set the IsMoving bool parameter for walk/idle animation
             if (_animator != null && _animator.runtimeAnimatorController != null)
             {
-                _animator.SetBool(AnimIsMoving, isMoving);
+                bool currentValue = _animator.GetBool(AnimIsMoving);
+                if (currentValue != isMoving)
+                {
+                    _animator.SetBool(AnimIsMoving, isMoving);
+                    Debug.Log($"[NecromancerAI] SetMoving: {isMoving} (was {currentValue})");
+                }
+            }
+            else if (_animator == null)
+            {
+                Debug.LogWarning("[NecromancerAI] No Animator component found!");
+            }
+            else if (_animator.runtimeAnimatorController == null)
+            {
+                Debug.LogWarning("[NecromancerAI] Animator has no controller!");
             }
         }
 
