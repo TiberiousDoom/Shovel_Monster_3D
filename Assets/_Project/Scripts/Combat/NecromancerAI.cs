@@ -25,7 +25,6 @@ namespace VoxelRPG.Combat
         [SerializeField] private float _preferredCombatDistance = 8f;
         [SerializeField] private float _retreatDistance = 4f;
         [SerializeField] private LayerMask _groundLayer = -1;
-        [SerializeField] private float _groundCheckDistance = 2f;
         [SerializeField] private float _gravity = 20f;
         [SerializeField] private float _stepHeight = 0.5f;
 
