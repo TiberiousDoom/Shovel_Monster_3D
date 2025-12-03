@@ -68,7 +68,7 @@ Transform:
   - {fileID: 485737977342005586}
   - {fileID: 2893637125145640564}
   - {fileID: 5865020498626289522}
-  - {fileID: 5249744227655677987}
+  - {fileID: 6878457086148013594}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &4228203817388944007
@@ -147,7 +147,7 @@ MonoBehaviour:
   _attackRadius: 1
   _projectilePrefab: {fileID: 0}
   _projectileSpeed: 10
-  _projectileSpawnPoint: {fileID: 0}
+  _projectileSpawnPoint: {fileID: 973884625948002463}
   _summonEffect: {fileID: 0}
   _castEffect: {fileID: 0}
   _showDebugGizmos: 1
@@ -262,7 +262,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6682063739175593150}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &89693204809954207
+--- !u!1001 &1626153197493724582
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -319,10 +319,10 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2e8d4d8b90cb4e55a2de54b985b53a2c, type: 3}
---- !u!4 &5249744227655677987 stripped
+--- !u!4 &6878457086148013594 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5324505939634834364, guid: 2e8d4d8b90cb4e55a2de54b985b53a2c, type: 3}
-  m_PrefabInstance: {fileID: 89693204809954207}
+  m_PrefabInstance: {fileID: 1626153197493724582}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6263948996905826457
 PrefabInstance:
