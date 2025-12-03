@@ -52,6 +52,7 @@ namespace VoxelRPG.UI
 
         private float _targetHealthValue;
         private float _targetHungerValue;
+        private bool _isInitialized;
 
         private void Start()
         {
@@ -65,6 +66,9 @@ namespace VoxelRPG.UI
             UpdateHealthDisplay();
             UpdateHungerDisplay();
             UpdateTimeDisplay();
+
+            // Mark as initialized if we found the health system
+            _isInitialized = _healthSystem != null;
         }
 
         private void OnDestroy()
@@ -74,6 +78,20 @@ namespace VoxelRPG.UI
 
         private void Update()
         {
+            // Retry initialization if player wasn't found at Start
+            if (!_isInitialized && _healthSystem == null)
+            {
+                CacheReferences();
+                if (_healthSystem != null)
+                {
+                    SubscribeToEvents();
+                    UpdateHealthDisplay();
+                    UpdateHungerDisplay();
+                    _isInitialized = true;
+                    Debug.Log("[HUDController] Late initialization - player found.");
+                }
+            }
+
             // Smooth animation for bars
             if (_healthSlider != null)
             {
