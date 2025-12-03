@@ -13,7 +13,7 @@ namespace VoxelRPG.Combat
         [SerializeField] private float _baseDamage = 15f;
         [SerializeField] private float _attackCooldown = 0.8f;
         [SerializeField] private float _attackRange = 2f;
-        [SerializeField] private float _knockbackForce = 5f;
+        // Note: Knockback not yet implemented - add when physics-based combat is added
 
         [Header("Attack Timing")]
         [Tooltip("Delay before hitbox activates (for wind-up animation)")]
