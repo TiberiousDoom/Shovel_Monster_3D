@@ -365,6 +365,9 @@ MonoBehaviour:
   _minSpawnDistance: 20
   _maxSpawnDistance: 40
   _spawnHeight: 1
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
   _despawnDistance: 60
   _despawnAtDawn: 0
   _burnInsteadOfDespawn: 0
