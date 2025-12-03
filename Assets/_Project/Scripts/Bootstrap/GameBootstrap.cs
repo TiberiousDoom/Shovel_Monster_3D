@@ -9,6 +9,7 @@ using VoxelRPG.UI;
 using VoxelRPG.Voxel;
 using VoxelRPG.Voxel.Generation;
 using VoxelRPG.World;
+using VoxelRPG.Core.Crafting;
 
 namespace VoxelRPG.Bootstrap
 {
@@ -63,6 +64,10 @@ namespace VoxelRPG.Bootstrap
         [Tooltip("Monster types that can spawn")]
         [SerializeField] private MonsterDefinition[] _monsterTypes;
 
+        [Header("Crafting")]
+        [Tooltip("Recipe registry containing all crafting recipes")]
+        [SerializeField] private VoxelRPG.Core.Crafting.RecipeRegistry _recipeRegistry;
+
         private WorldGenerator _worldGenerator;
 
         private void Start()
@@ -71,6 +76,7 @@ namespace VoxelRPG.Bootstrap
             SetupWorld();
             SetupLighting();
             SetupTimeSystem();
+            SetupCrafting();
             SetupMonsterSpawner();
             SetupUI();
             // Player setup is done after terrain generation in the coroutine
@@ -391,6 +397,23 @@ namespace VoxelRPG.Bootstrap
             // Configure hunger drain: 1 unit per minute = 1/60 per second
             hungerSystem.HungerDecayRate = 1f / 60f;
 
+            // Add Hurtbox for receiving damage from monsters
+            // Create a child GameObject with a trigger collider for the hurtbox
+            var hurtboxObject = new GameObject("Hurtbox");
+            hurtboxObject.transform.SetParent(playerObject.transform);
+            hurtboxObject.transform.localPosition = new Vector3(0, 0.9f, 0); // Center of player
+            hurtboxObject.layer = playerObject.layer;
+
+            // Add capsule collider matching player's body
+            var hurtboxCollider = hurtboxObject.AddComponent<CapsuleCollider>();
+            hurtboxCollider.height = 1.8f;
+            hurtboxCollider.radius = 0.4f;
+            hurtboxCollider.isTrigger = true;
+
+            // Add Hurtbox component - it will find HealthSystem on parent
+            hurtboxObject.AddComponent<Hurtbox>();
+            Debug.Log("[GameBootstrap] Added Hurtbox to player for damage detection.");
+
             // Give starting item if configured
             if (_startingItem != null)
             {
@@ -525,6 +548,40 @@ namespace VoxelRPG.Bootstrap
             var weatherObject = new GameObject("WeatherSystem");
             weatherObject.AddComponent<StubWeatherSystem>();
             Debug.Log("[GameBootstrap] Created StubWeatherSystem.");
+        }
+
+        private void SetupCrafting()
+        {
+            // Check if CraftingManager already exists
+            if (FindFirstObjectByType<CraftingManager>() != null)
+            {
+                return;
+            }
+
+            // Create CraftingManager
+            var craftingObject = new GameObject("CraftingManager");
+            var craftingManager = craftingObject.AddComponent<CraftingManager>();
+
+            // Assign recipe registry if available
+            if (_recipeRegistry != null)
+            {
+                // Use reflection to set the private field since we're creating at runtime
+                var field = typeof(CraftingManager).GetField("_recipeRegistry",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field != null)
+                {
+                    field.SetValue(craftingManager, _recipeRegistry);
+                    _recipeRegistry.Initialize();
+                    ServiceLocator.Register<IRecipeRegistry>(_recipeRegistry);
+                    Debug.Log($"[GameBootstrap] Assigned RecipeRegistry with {_recipeRegistry.Count} recipes.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[GameBootstrap] No RecipeRegistry assigned - crafting will have no recipes!");
+            }
+
+            Debug.Log("[GameBootstrap] Created CraftingManager.");
         }
 
         private void SetupMonsterSpawner()

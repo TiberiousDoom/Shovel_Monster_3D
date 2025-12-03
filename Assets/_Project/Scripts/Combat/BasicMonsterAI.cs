@@ -721,18 +721,45 @@ namespace VoxelRPG.Combat
                 if (hit.transform == transform) continue;
                 if (hit.transform.IsChildOf(transform)) continue;
 
-                // Check for player or damageable
-                var damageable = hit.GetComponent<IDamageable>();
-                if (damageable == null || !damageable.IsAlive) continue;
+                // Find the root transform to target (may be parent if we hit a hurtbox)
+                Transform targetRoot = hit.transform;
+
+                // Check for Hurtbox first (player hurtbox is a child object)
+                var hurtbox = hit.GetComponent<Hurtbox>();
+                if (hurtbox != null)
+                {
+                    if (hurtbox.Damageable == null || !hurtbox.Damageable.IsAlive) continue;
+                    // Get the root player object
+                    targetRoot = hit.transform.root;
+                }
+                else
+                {
+                    // Check for player or damageable directly
+                    var damageable = hit.GetComponent<IDamageable>();
+                    if (damageable == null)
+                    {
+                        damageable = hit.GetComponentInParent<IDamageable>();
+                        if (damageable != null)
+                        {
+                            // Get the parent that has the IDamageable
+                            var damageableMono = damageable as MonoBehaviour;
+                            if (damageableMono != null)
+                            {
+                                targetRoot = damageableMono.transform;
+                            }
+                        }
+                    }
+                    if (damageable == null || !damageable.IsAlive) continue;
+                }
 
                 // Check if it's actually a valid target (player)
-                if (hit.CompareTag("Player"))
+                if (targetRoot.CompareTag("Player") || hit.CompareTag("Player"))
                 {
-                    float distance = Vector3.Distance(transform.position, hit.transform.position);
+                    float distance = Vector3.Distance(transform.position, targetRoot.position);
                     if (distance < bestDistance)
                     {
                         bestDistance = distance;
-                        bestTarget = hit.transform;
+                        bestTarget = targetRoot;
                     }
                 }
             }
@@ -753,23 +780,50 @@ namespace VoxelRPG.Combat
 
             _attackCooldownTimer = _definition.AttackCooldown;
 
+            // Use definition's attack range if attack radius not set
+            float effectiveRadius = _attackRadius > 0 ? _attackRadius : _definition.AttackRange;
+
             // Check for targets in attack range
             Collider[] hits = Physics.OverlapSphere(
                 _attackPoint.position,
-                _attackRadius,
+                effectiveRadius,
                 _targetLayers
             );
 
+            bool hitSomething = false;
             foreach (var hit in hits)
             {
                 if (hit.transform == transform) continue;
+                if (hit.transform.IsChildOf(transform)) continue;
 
+                // First check for Hurtbox (preferred - allows damage multipliers)
+                var hurtbox = hit.GetComponent<Hurtbox>();
+                if (hurtbox != null && hurtbox.IsActive && hurtbox.Damageable != null && hurtbox.Damageable.IsAlive)
+                {
+                    hurtbox.ApplyDamage(_definition.AttackDamage, gameObject);
+                    Debug.Log($"[BasicMonsterAI] {_definition.DisplayName} dealt {_definition.AttackDamage} damage via Hurtbox");
+                    hitSomething = true;
+                    continue;
+                }
+
+                // Fallback: check for IDamageable on the collider or its parent
                 var damageable = hit.GetComponent<IDamageable>();
+                if (damageable == null)
+                {
+                    damageable = hit.GetComponentInParent<IDamageable>();
+                }
+
                 if (damageable != null && damageable.IsAlive)
                 {
                     damageable.TakeDamage(_definition.AttackDamage, gameObject);
-                    Debug.Log($"[BasicMonsterAI] {_definition.DisplayName} dealt {_definition.AttackDamage} damage");
+                    Debug.Log($"[BasicMonsterAI] {_definition.DisplayName} dealt {_definition.AttackDamage} damage directly");
+                    hitSomething = true;
                 }
+            }
+
+            if (!hitSomething && hits.Length > 0)
+            {
+                Debug.Log($"[BasicMonsterAI] Attack hit {hits.Length} colliders but found no valid damage targets");
             }
 
             // Play attack sound

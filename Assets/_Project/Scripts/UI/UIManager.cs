@@ -22,6 +22,7 @@ namespace VoxelRPG.UI
         [Header("Input")]
         [SerializeField] private InputActionReference _pauseAction;
         [SerializeField] private InputActionReference _inventoryAction;
+        [SerializeField] private InputActionReference _craftingAction;
 
         [Header("Settings")]
         [Tooltip("Whether to pause the game when pause menu is open")]
@@ -61,22 +62,107 @@ namespace VoxelRPG.UI
             ServiceLocator.Register<UIManager>(this);
         }
 
+        // Dynamically found actions (when InputActionReferences aren't assigned)
+        private InputAction _dynamicPauseAction;
+        private InputAction _dynamicInventoryAction;
+        private InputAction _dynamicCraftingAction;
+
         private void Start()
         {
             // Initialize to gameplay state
             SetState(UIScreenState.Gameplay);
 
-            // Subscribe to input actions
+            // Subscribe to input actions (try references first, then find dynamically)
+            SetupInputActions();
+        }
+
+        private void SetupInputActions()
+        {
+            // Try to find input actions from player if references aren't set
+            if (_pauseAction == null || _inventoryAction == null || _craftingAction == null)
+            {
+                TryFindInputActionsFromPlayer();
+            }
+
+            // Subscribe to pause action
             if (_pauseAction != null)
             {
                 _pauseAction.action.performed += OnPauseInput;
                 _pauseAction.action.Enable();
             }
+            else if (_dynamicPauseAction != null)
+            {
+                _dynamicPauseAction.performed += OnPauseInput;
+                _dynamicPauseAction.Enable();
+            }
 
+            // Subscribe to inventory action
             if (_inventoryAction != null)
             {
                 _inventoryAction.action.performed += OnInventoryInput;
                 _inventoryAction.action.Enable();
+            }
+            else if (_dynamicInventoryAction != null)
+            {
+                _dynamicInventoryAction.performed += OnInventoryInput;
+                _dynamicInventoryAction.Enable();
+            }
+
+            // Subscribe to crafting action
+            if (_craftingAction != null)
+            {
+                _craftingAction.action.performed += OnCraftingInput;
+                _craftingAction.action.Enable();
+            }
+            else if (_dynamicCraftingAction != null)
+            {
+                _dynamicCraftingAction.performed += OnCraftingInput;
+                _dynamicCraftingAction.Enable();
+            }
+        }
+
+        private void TryFindInputActionsFromPlayer()
+        {
+            var playerInput = FindFirstObjectByType<PlayerInput>();
+            if (playerInput == null || playerInput.actions == null)
+            {
+                Debug.LogWarning("[UIManager] No PlayerInput found - UI input won't work.");
+                return;
+            }
+
+            var playerActionMap = playerInput.actions.FindActionMap("Player");
+            if (playerActionMap == null)
+            {
+                Debug.LogWarning("[UIManager] No 'Player' action map found.");
+                return;
+            }
+
+            // Find and cache the actions
+            if (_pauseAction == null)
+            {
+                _dynamicPauseAction = playerActionMap.FindAction("Pause");
+                if (_dynamicPauseAction != null)
+                {
+                    Debug.Log("[UIManager] Found Pause action dynamically.");
+                }
+            }
+
+            if (_inventoryAction == null)
+            {
+                _dynamicInventoryAction = playerActionMap.FindAction("Inventory");
+                if (_dynamicInventoryAction != null)
+                {
+                    Debug.Log("[UIManager] Found Inventory action dynamically.");
+                }
+            }
+
+            if (_craftingAction == null)
+            {
+                _dynamicCraftingAction = playerActionMap.FindAction("Crafting");
+                if (_dynamicCraftingAction != null)
+                {
+                    Debug.Log("[UIManager] Found Crafting action dynamically.");
+                }
             }
         }
 
@@ -84,6 +170,7 @@ namespace VoxelRPG.UI
         {
             ServiceLocator.Unregister<UIManager>();
 
+            // Cleanup InputActionReference subscriptions
             if (_pauseAction != null)
             {
                 _pauseAction.action.performed -= OnPauseInput;
@@ -92,6 +179,27 @@ namespace VoxelRPG.UI
             if (_inventoryAction != null)
             {
                 _inventoryAction.action.performed -= OnInventoryInput;
+            }
+
+            if (_craftingAction != null)
+            {
+                _craftingAction.action.performed -= OnCraftingInput;
+            }
+
+            // Cleanup dynamic action subscriptions
+            if (_dynamicPauseAction != null)
+            {
+                _dynamicPauseAction.performed -= OnPauseInput;
+            }
+
+            if (_dynamicInventoryAction != null)
+            {
+                _dynamicInventoryAction.performed -= OnInventoryInput;
+            }
+
+            if (_dynamicCraftingAction != null)
+            {
+                _dynamicCraftingAction.performed -= OnCraftingInput;
             }
         }
 
@@ -129,6 +237,21 @@ namespace VoxelRPG.UI
             else if (_currentState == UIScreenState.Gameplay)
             {
                 OpenInventory();
+            }
+        }
+
+        private void OnCraftingInput(InputAction.CallbackContext context)
+        {
+            if (!_inputEnabled) return;
+            if (_currentState == UIScreenState.Paused) return;
+
+            if (_currentState == UIScreenState.Crafting)
+            {
+                ReturnToGameplay();
+            }
+            else if (_currentState == UIScreenState.Gameplay)
+            {
+                OpenCrafting();
             }
         }
 
