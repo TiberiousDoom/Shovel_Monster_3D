@@ -393,6 +393,7 @@ namespace VoxelRPG.Bootstrap
             var playerStats = playerObject.AddComponent<PlayerStats>();
             var playerInventory = playerObject.AddComponent<PlayerInventory>();
             var deathHandler = playerObject.AddComponent<DeathHandler>();
+            var survivalDebug = playerObject.AddComponent<PlayerSurvivalDebug>();
 
             // Configure hunger drain: 1 unit per minute = 1/60 per second
             hungerSystem.HungerDecayRate = 1f / 60f;
