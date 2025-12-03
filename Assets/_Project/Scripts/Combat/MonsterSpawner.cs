@@ -272,7 +272,7 @@ namespace VoxelRPG.Combat
                 Vector3 testPos = _spawnCenter.position + offset;
 
                 // Try to find valid NavMesh position
-                if (NavMesh.SamplePosition(testPos, out NavMeshHit hit, 10f, NavMesh.AllAreas))
+                if (UnityEngine.AI.NavMesh.SamplePosition(testPos, out UnityEngine.AI.NavMeshHit hit, 10f, UnityEngine.AI.NavMesh.AllAreas))
                 {
                     position = hit.position + Vector3.up * _spawnHeight;
                     return true;
