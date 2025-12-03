@@ -282,9 +282,9 @@ namespace VoxelRPG.Combat
             _hasDestination = false;
 
             // Play death animation
-            if (_animator != null)
+            if (_animator != null && _animator.runtimeAnimatorController != null)
             {
-                _animator.SetTrigger(AnimDeath);
+                _animator.SetTrigger(AnimIsDead);
             }
 
             Debug.Log($"[NecromancerAI] {_definition?.DisplayName ?? "Necromancer"} died!");
