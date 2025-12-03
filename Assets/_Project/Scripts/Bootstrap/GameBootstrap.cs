@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using VoxelRPG.Combat;
 using VoxelRPG.Core;
+using VoxelRPG.Core.Crafting;
 using VoxelRPG.Core.Items;
 using VoxelRPG.Player;
 using VoxelRPG.UI;
@@ -60,6 +61,10 @@ namespace VoxelRPG.Bootstrap
         [Tooltip("Monster types that can spawn")]
         [SerializeField] private MonsterDefinition[] _monsterTypes;
 
+        [Header("Crafting")]
+        [Tooltip("Recipe registry for crafting system")]
+        [SerializeField] private RecipeRegistry _recipeRegistry;
+
         private WorldGenerator _worldGenerator;
 
         private void Start()
@@ -68,6 +73,7 @@ namespace VoxelRPG.Bootstrap
             SetupWorld();
             SetupLighting();
             SetupTimeSystem();
+            SetupCrafting();
             SetupMonsterSpawner();
             SetupUI();
             // Player setup is done after terrain generation in the coroutine
@@ -497,6 +503,36 @@ namespace VoxelRPG.Bootstrap
             var weatherObject = new GameObject("WeatherSystem");
             weatherObject.AddComponent<StubWeatherSystem>();
             Debug.Log("[GameBootstrap] Created StubWeatherSystem.");
+        }
+
+        private void SetupCrafting()
+        {
+            // Check if CraftingManager already exists
+            if (FindFirstObjectByType<CraftingManager>() != null)
+            {
+                return;
+            }
+
+            if (_recipeRegistry == null)
+            {
+                Debug.LogWarning("[GameBootstrap] No RecipeRegistry assigned. Crafting system will not function.");
+                return;
+            }
+
+            // Create CraftingManager
+            var craftingObject = new GameObject("CraftingManager");
+            var craftingManager = craftingObject.AddComponent<CraftingManager>();
+
+            // Wire the recipe registry via reflection (since the field is private serialized)
+            var registryField = typeof(CraftingManager).GetField("_recipeRegistry",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (registryField != null)
+            {
+                registryField.SetValue(craftingManager, _recipeRegistry);
+                _recipeRegistry.Initialize();
+            }
+
+            Debug.Log("[GameBootstrap] Created CraftingManager.");
         }
 
         private void SetupMonsterSpawner()
