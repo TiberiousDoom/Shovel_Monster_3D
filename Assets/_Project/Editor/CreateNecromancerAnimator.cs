@@ -42,7 +42,7 @@ public class CreateNecromancerAnimator
         AnimatorStateMachine stateMachine = baseLayer.stateMachine;
 
         // Find animation clips
-        AnimationClip idleClip = FindAnimationClip("Talk", "HumanM@Talk01"); // Use Talk as idle (standing still)
+        AnimationClip idleClip = FindAnimationClip("Idles", "HumanM@Idle01");
         AnimationClip walkClip = FindAnimationClip("Walk", "HumanM@Walk01_Forward");
 
         if (idleClip == null)
@@ -135,8 +135,10 @@ public class CreateNecromancerAnimator
         // Search in multiple locations
         string[] searchPaths = new[]
         {
+            $"{AnimationsFolder}/{subFolder}/{clipName}.fbx",
             $"{AnimationsFolder}/Movement/{subFolder}/{clipName}.fbx",
             $"{AnimationsFolder}/Social/Conversation/{clipName}.fbx",
+            $"Assets/Kevin Iglesias/Human Animations/Animations/Male/{subFolder}/{clipName}.fbx",
             $"Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/{subFolder}/{clipName}.fbx"
         };
 
