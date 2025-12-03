@@ -77,10 +77,17 @@ namespace VoxelRPG.Player
         /// <returns>Actual damage dealt.</returns>
         public float TakeDamage(float damage, GameObject source = null)
         {
-            if (!_isAlive || damage <= 0) return 0f;
+            if (!_isAlive || damage <= 0)
+            {
+                Debug.Log($"[HealthSystem] TakeDamage blocked: alive={_isAlive}, damage={damage}");
+                return 0f;
+            }
 
+            float healthBefore = _currentHealth;
             float actualDamage = Mathf.Min(damage, _currentHealth);
             _currentHealth -= actualDamage;
+
+            Debug.Log($"[HealthSystem] TakeDamage: {healthBefore} - {actualDamage} = {_currentHealth} (source: {source?.name ?? "null"})");
 
             RaiseHealthChanged();
 
