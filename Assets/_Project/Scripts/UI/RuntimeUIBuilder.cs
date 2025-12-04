@@ -271,8 +271,8 @@ namespace VoxelRPG.UI
             var listRect = listContainer.AddComponent<RectTransform>();
             listRect.anchorMin = new Vector2(0, 0);
             listRect.anchorMax = new Vector2(0.5f, 1);
-            listRect.offsetMin = new Vector2(10, 50);
-            listRect.offsetMax = new Vector2(-10, -10);
+            listRect.offsetMin = new Vector2(10, 60);  // Space for craft button at bottom
+            listRect.offsetMax = new Vector2(-5, -55); // Space for title at top (title is 40px + 10px padding)
             listContainer.AddComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
             // Recipe list with scroll rect
@@ -313,8 +313,8 @@ namespace VoxelRPG.UI
             contentLayout.childControlHeight = false;
             contentLayout.childForceExpandWidth = true;
             contentLayout.childForceExpandHeight = false;
-            var contentFitter = content.AddComponent<LayoutElement>();
-            contentFitter.preferredHeight = 200;
+            var contentFitter = content.AddComponent<ContentSizeFitter>();
+            contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             scrollRect.content = contentRect;
             scrollRect.viewport = viewportRect;
@@ -325,8 +325,8 @@ namespace VoxelRPG.UI
             var detailsRect = detailsPanel.AddComponent<RectTransform>();
             detailsRect.anchorMin = new Vector2(0.5f, 0);
             detailsRect.anchorMax = new Vector2(1, 1);
-            detailsRect.offsetMin = new Vector2(10, 50);
-            detailsRect.offsetMax = new Vector2(-10, -10);
+            detailsRect.offsetMin = new Vector2(5, 60);   // Space for craft button at bottom
+            detailsRect.offsetMax = new Vector2(-10, -55); // Space for title at top (title is 40px + 10px padding)
             detailsPanel.AddComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
             // Recipe name
@@ -334,20 +334,21 @@ namespace VoxelRPG.UI
                 TextAlignmentOptions.TopLeft, 18);
             recipeName.rectTransform.anchorMin = new Vector2(0, 1);
             recipeName.rectTransform.anchorMax = new Vector2(1, 1);
-            recipeName.rectTransform.pivot = new Vector2(0, 1);
-            recipeName.rectTransform.offsetMin = new Vector2(5, -30);
-            recipeName.rectTransform.offsetMax = new Vector2(-5, 0);
+            recipeName.rectTransform.pivot = new Vector2(0.5f, 1);
+            recipeName.rectTransform.anchoredPosition = new Vector2(0, -5);
+            recipeName.rectTransform.sizeDelta = new Vector2(-10, 30);
 
             // Result icon and quantity
             var resultContainer = new GameObject("ResultContainer");
             resultContainer.transform.SetParent(detailsPanel.transform, false);
             var resultRect = resultContainer.AddComponent<RectTransform>();
-            resultRect.anchorMin = new Vector2(0, 0.7f);
+            resultRect.anchorMin = new Vector2(0, 1);
             resultRect.anchorMax = new Vector2(0.3f, 1);
-            resultRect.offsetMin = new Vector2(5, 5);
-            resultRect.offsetMax = new Vector2(-5, -5);
+            resultRect.pivot = new Vector2(0, 1);
+            resultRect.anchoredPosition = new Vector2(10, -40);
+            resultRect.sizeDelta = new Vector2(64, 64);
             var resultImage = resultContainer.AddComponent<Image>();
-            resultImage.color = Color.clear;
+            resultImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f);
 
             var resultIcon = new GameObject("ResultIcon");
             resultIcon.transform.SetParent(resultContainer.transform, false);
@@ -370,19 +371,20 @@ namespace VoxelRPG.UI
             // Ingredients list
             var ingredientsLabel = CreateText(detailsPanel.transform, "IngredientsLabel", "Ingredients:",
                 TextAlignmentOptions.TopLeft, 14);
-            ingredientsLabel.rectTransform.anchorMin = new Vector2(0.3f, 1);
+            ingredientsLabel.rectTransform.anchorMin = new Vector2(0, 1);
             ingredientsLabel.rectTransform.anchorMax = new Vector2(1, 1);
             ingredientsLabel.rectTransform.pivot = new Vector2(0, 1);
-            ingredientsLabel.rectTransform.offsetMin = new Vector2(5, -50);
-            ingredientsLabel.rectTransform.offsetMax = new Vector2(-5, -65);
+            ingredientsLabel.rectTransform.anchoredPosition = new Vector2(85, -45);
+            ingredientsLabel.rectTransform.sizeDelta = new Vector2(200, 20);
 
             var ingredientsContainer = new GameObject("IngredientsContainer");
             ingredientsContainer.transform.SetParent(detailsPanel.transform, false);
             var ingredientsRect = ingredientsContainer.AddComponent<RectTransform>();
-            ingredientsRect.anchorMin = new Vector2(0.3f, 0.5f);
-            ingredientsRect.anchorMax = new Vector2(1, 0.9f);
-            ingredientsRect.offsetMin = new Vector2(5, 5);
-            ingredientsRect.offsetMax = new Vector2(-5, -5);
+            ingredientsRect.anchorMin = new Vector2(0, 1);
+            ingredientsRect.anchorMax = new Vector2(1, 1);
+            ingredientsRect.pivot = new Vector2(0.5f, 1);
+            ingredientsRect.anchoredPosition = new Vector2(0, -70);
+            ingredientsRect.sizeDelta = new Vector2(-20, 150);
             var ingredientsLayout = ingredientsContainer.AddComponent<VerticalLayoutGroup>();
             ingredientsLayout.spacing = 4;
             ingredientsLayout.padding = new RectOffset(2, 2, 2, 2);
