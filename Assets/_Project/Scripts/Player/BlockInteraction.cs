@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using VoxelRPG.Core;
 using VoxelRPG.Core.Items;
+using VoxelRPG.UI;
 using VoxelRPG.Voxel;
 
 namespace VoxelRPG.Player
@@ -165,6 +166,16 @@ namespace VoxelRPG.Player
         {
             if (_voxelWorld == null)
             {
+                return;
+            }
+
+            // Don't process interactions when UI is open
+            if (ServiceLocator.TryGet<UIManager>(out var uiManager) && !uiManager.IsGameplayInputEnabled)
+            {
+                // Clear any queued inputs
+                _breakBlockPressed = false;
+                _placeBlockPressed = false;
+                _interactPressed = false;
                 return;
             }
 
