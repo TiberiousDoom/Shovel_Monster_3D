@@ -67,6 +67,16 @@ namespace VoxelRPG.UI
             ServiceLocator.TryGet(out _craftingManager);
             ServiceLocator.TryGet(out _playerInventory);
 
+            Debug.Log($"[CraftingUI] OnEnable - RecipeRegistry: {(_recipeRegistry != null ? "found" : "NULL")}, " +
+                      $"CraftingManager: {(_craftingManager != null ? "found" : "NULL")}, " +
+                      $"PlayerInventory: {(_playerInventory != null ? "found" : "NULL")}");
+
+            if (_recipeRegistry != null)
+            {
+                var handRecipes = _recipeRegistry.GetHandCraftableRecipes();
+                Debug.Log($"[CraftingUI] Hand-craftable recipes: {System.Linq.Enumerable.Count(handRecipes)}");
+            }
+
             if (_playerInventory != null)
             {
                 _playerInventory.OnSlotChanged += OnInventoryChanged;
@@ -109,6 +119,9 @@ namespace VoxelRPG.UI
 
             if (_recipeRegistry == null || _recipeListContainer == null)
             {
+                Debug.LogWarning($"[CraftingUI] PopulateRecipeList - Cannot populate: " +
+                                 $"RecipeRegistry={(_recipeRegistry != null ? "OK" : "NULL")}, " +
+                                 $"ListContainer={(_recipeListContainer != null ? "OK" : "NULL")}");
                 return;
             }
 
@@ -134,11 +147,14 @@ namespace VoxelRPG.UI
                 recipes = stationRecipes.Concat(handRecipes).Distinct();
             }
 
+            int recipeCount = 0;
             foreach (var recipe in recipes)
             {
                 if (recipe == null) continue;
+                recipeCount++;
 
                 var slotObj = Instantiate(prefab, _recipeListContainer);
+                slotObj.SetActive(true); // Ensure the slot is active
                 var slot = slotObj.GetComponent<RecipeSlotUI>();
                 if (slot != null)
                 {
@@ -147,6 +163,8 @@ namespace VoxelRPG.UI
                     _recipeSlots.Add(slot);
                 }
             }
+
+            Debug.Log($"[CraftingUI] PopulateRecipeList - Created {recipeCount} recipe slots");
         }
 
         private RecipeSlotUI CreateRecipeSlotPrefab()
