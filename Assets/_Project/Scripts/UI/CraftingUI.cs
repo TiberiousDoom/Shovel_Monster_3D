@@ -175,6 +175,11 @@ namespace VoxelRPG.UI
             var rect = prefabObj.AddComponent<RectTransform>();
             rect.sizeDelta = new Vector2(300, 40);
 
+            // Add LayoutElement so VerticalLayoutGroup respects our size
+            var layoutElement = prefabObj.AddComponent<LayoutElement>();
+            layoutElement.minHeight = 40;
+            layoutElement.preferredHeight = 40;
+
             var image = prefabObj.AddComponent<Image>();
             image.color = new Color(0.3f, 0.5f, 0.3f, 0.8f);
 
