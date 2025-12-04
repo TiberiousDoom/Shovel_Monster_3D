@@ -62,6 +62,11 @@ namespace VoxelRPG.Core.Crafting
             if (_recipeRegistry != null)
             {
                 _recipeRegistry.Initialize();
+                ServiceLocator.Register<IRecipeRegistry>(_recipeRegistry);
+            }
+            else
+            {
+                Debug.LogWarning("[CraftingManager] No RecipeRegistry assigned!");
             }
         }
 
