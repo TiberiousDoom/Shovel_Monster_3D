@@ -27,13 +27,13 @@ MonoBehaviour:
   _treeTypes:
   - TrunkBlock: {fileID: 11400000, guid: d34f06eef6a57c74db0b40169b0f2c29, type: 2}
     LeavesBlock: {fileID: 11400000, guid: 9f6c3c81e8f425a419a24bb0c1df7d5d, type: 2}
-    MinTrunkHeight: 3
-    MaxTrunkHeight: 7
+    MinTrunkHeight: 5
+    MaxTrunkHeight: 11
     LeafRadius: 3
   - TrunkBlock: {fileID: 11400000, guid: d34f06eef6a57c74db0b40169b0f2c29, type: 2}
     LeavesBlock: {fileID: 11400000, guid: 9f6c3c81e8f425a419a24bb0c1df7d5d, type: 2}
     MinTrunkHeight: 3
-    MaxTrunkHeight: 3
+    MaxTrunkHeight: 5
     LeafRadius: 1
   _waterLevel: 20
   _beachHeight: 2

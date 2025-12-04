@@ -372,7 +372,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95b774430e99f5249b0b30d4406293f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _recipeRegistry: {fileID: 11400000, guid: f1a2b3c4d5e6f7890123456789abcdef, type: 2}
+  _recipeRegistry: {fileID: 11400000, guid: 1903368e42e275948a767a66191afebe, type: 2}
   _onCraftingStarted: {fileID: 0}
   _onCraftingCompleted: {fileID: 0}
   _onCraftingCancelled: {fileID: 0}
