@@ -26,6 +26,7 @@ namespace VoxelRPG.UI
         private GameObject _pauseScreen;
         private GameObject _inventoryScreen;
         private GameObject _craftingScreen;
+        private GameObject _characterScreen;
         private GameObject _deathScreen;
 
         // HUD references
@@ -44,6 +45,7 @@ namespace VoxelRPG.UI
             CreatePauseScreen();
             CreateInventoryScreen();
             CreateCraftingScreen();
+            CreateCharacterScreen();
             CreateDeathScreen();
             WireUIManager();
 
@@ -251,7 +253,7 @@ namespace VoxelRPG.UI
             // Center panel
             var panel = CreatePanel(_craftingScreen.transform, "CraftingPanel",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(350, 400));
+                Vector2.zero, new Vector2(700, 500));
             panel.GetComponent<Image>().color = _panelColor;
 
             // Title
@@ -263,30 +265,140 @@ namespace VoxelRPG.UI
             title.rectTransform.anchoredPosition = new Vector2(0, -10);
             title.rectTransform.sizeDelta = new Vector2(0, 40);
 
-            // Recipe list area
-            var listArea = CreatePanel(panel.transform, "RecipeList",
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, 10), new Vector2(310, 280));
-            listArea.GetComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
+            // Left side: Recipe list
+            var listContainer = CreatePanel(panel.transform, "ListContainer",
+                new Vector2(0, 1), new Vector2(0.5f, 1),
+                new Vector2(10, -50), new Vector2(-20, -60));
+            listContainer.GetComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
-            var infoText = CreateText(listArea.transform, "InfoText", "Recipes will appear here\nwhen items are available",
-                TextAlignmentOptions.Center, 16);
-            infoText.rectTransform.anchorMin = Vector2.zero;
-            infoText.rectTransform.anchorMax = Vector2.one;
-            infoText.rectTransform.offsetMin = Vector2.zero;
-            infoText.rectTransform.offsetMax = Vector2.zero;
-            infoText.color = new Color(0.6f, 0.6f, 0.6f);
+            // Recipe list with scroll rect
+            var scrollRectObj = new GameObject("RecipeListScroll");
+            scrollRectObj.transform.SetParent(listContainer.transform, false);
+            var scrollRect = scrollRectObj.AddComponent<ScrollRect>();
+            var scrollRectRect = scrollRectObj.AddComponent<RectTransform>();
+            scrollRectRect.anchorMin = Vector2.zero;
+            scrollRectRect.anchorMax = Vector2.one;
+            scrollRectRect.offsetMin = Vector2.zero;
+            scrollRectRect.offsetMax = Vector2.zero;
+
+            // Viewport
+            var viewport = new GameObject("Viewport");
+            viewport.transform.SetParent(scrollRectObj.transform, false);
+            var viewportRect = viewport.AddComponent<RectTransform>();
+            viewportRect.anchorMin = Vector2.zero;
+            viewportRect.anchorMax = Vector2.one;
+            viewportRect.offsetMin = Vector2.zero;
+            viewportRect.offsetMax = Vector2.zero;
+            viewport.AddComponent<Image>().color = Color.clear;
+            viewport.AddComponent<Mask>();
+
+            // Content area for recipes
+            var content = new GameObject("Content");
+            content.transform.SetParent(viewport.transform, false);
+            var contentRect = content.AddComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0, 1);
+            contentRect.anchorMax = new Vector2(1, 1);
+            contentRect.pivot = new Vector2(0.5f, 1);
+            contentRect.offsetMin = new Vector2(5, 0);
+            contentRect.offsetMax = new Vector2(-5, 0);
+            contentRect.sizeDelta = new Vector2(0, 0);
+            var contentLayout = content.AddComponent<VerticalLayoutGroup>();
+            contentLayout.spacing = 4;
+            contentLayout.padding = new RectOffset(2, 2, 2, 2);
+            contentLayout.childControlWidth = true;
+            contentLayout.childControlHeight = false;
+            contentLayout.childForceExpandWidth = true;
+            contentLayout.childForceExpandHeight = false;
+            var contentFitter = content.AddComponent<LayoutElement>();
+            contentFitter.preferredHeight = 200;
+
+            scrollRect.content = contentRect;
+            scrollRect.viewport = viewportRect;
+
+            // Right side: Recipe details
+            var detailsPanel = CreatePanel(panel.transform, "DetailsPanel",
+                new Vector2(0.5f, 1), new Vector2(1, 1),
+                new Vector2(-10, -50), new Vector2(-20, -60));
+            detailsPanel.GetComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
+
+            // Recipe name
+            var recipeName = CreateText(detailsPanel.transform, "RecipeName", "Select a recipe",
+                TextAlignmentOptions.TopLeft, 18);
+            recipeName.rectTransform.anchorMin = new Vector2(0, 1);
+            recipeName.rectTransform.anchorMax = new Vector2(1, 1);
+            recipeName.rectTransform.pivot = new Vector2(0, 1);
+            recipeName.rectTransform.offsetMin = new Vector2(5, -30);
+            recipeName.rectTransform.offsetMax = new Vector2(-5, 0);
+
+            // Result icon and quantity
+            var resultContainer = CreatePanel(detailsPanel.transform, "ResultContainer",
+                new Vector2(0, 1), new Vector2(0.3f, 1),
+                new Vector2(5, -50), new Vector2(-5, -80));
+            resultContainer.GetComponent<Image>().color = Color.clear;
+
+            var resultIcon = new GameObject("ResultIcon");
+            resultIcon.transform.SetParent(resultContainer.transform, false);
+            var iconRect = resultIcon.AddComponent<RectTransform>();
+            iconRect.anchorMin = Vector2.zero;
+            iconRect.anchorMax = Vector2.one;
+            iconRect.offsetMin = Vector2.zero;
+            iconRect.offsetMax = Vector2.zero;
+            var iconImage = resultIcon.AddComponent<Image>();
+            iconImage.color = Color.clear;
+
+            var resultQuantity = CreateText(resultContainer.transform, "ResultQuantity", "x1",
+                TextAlignmentOptions.BottomRight, 14);
+            resultQuantity.rectTransform.anchorMin = Vector2.one;
+            resultQuantity.rectTransform.anchorMax = Vector2.one;
+            resultQuantity.rectTransform.pivot = Vector2.one;
+            resultQuantity.rectTransform.offsetMin = Vector2.zero;
+            resultQuantity.rectTransform.offsetMax = new Vector2(-2, -2);
+
+            // Ingredients list
+            var ingredientsLabel = CreateText(detailsPanel.transform, "IngredientsLabel", "Ingredients:",
+                TextAlignmentOptions.TopLeft, 14);
+            ingredientsLabel.rectTransform.anchorMin = new Vector2(0.3f, 1);
+            ingredientsLabel.rectTransform.anchorMax = new Vector2(1, 1);
+            ingredientsLabel.rectTransform.pivot = new Vector2(0, 1);
+            ingredientsLabel.rectTransform.offsetMin = new Vector2(5, -50);
+            ingredientsLabel.rectTransform.offsetMax = new Vector2(-5, -65);
+
+            var ingredientsContainer = new GameObject("IngredientsContainer");
+            ingredientsContainer.transform.SetParent(detailsPanel.transform, false);
+            var ingredientsRect = ingredientsContainer.AddComponent<RectTransform>();
+            ingredientsRect.anchorMin = new Vector2(0.3f, 0.5f);
+            ingredientsRect.anchorMax = new Vector2(1, 0.9f);
+            ingredientsRect.offsetMin = new Vector2(5, 5);
+            ingredientsRect.offsetMax = new Vector2(-5, -5);
+            var ingredientsLayout = ingredientsContainer.AddComponent<VerticalLayoutGroup>();
+            ingredientsLayout.spacing = 4;
+            ingredientsLayout.padding = new RectOffset(2, 2, 2, 2);
+            ingredientsLayout.childControlWidth = true;
+            ingredientsLayout.childControlHeight = false;
+            ingredientsLayout.childForceExpandWidth = true;
+            ingredientsLayout.childForceExpandHeight = false;
 
             // Craft button
             var craftBtn = CreateButton(panel.transform, "CraftButton", "Craft", 40);
             craftBtn.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 0);
             craftBtn.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 0);
             craftBtn.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0);
-            craftBtn.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 20);
+            craftBtn.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 10);
             craftBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(200, 40);
 
-            // Add CraftingUI component
+            var craftButtonText = craftBtn.GetComponentInChildren<TextMeshProUGUI>();
+
+            // Add CraftingUI component and wire references
             var craftingUI = _craftingScreen.AddComponent<CraftingUI>();
+            SetPrivateField(craftingUI, "_recipeListContainer", content);
+            SetPrivateField(craftingUI, "_recipeScrollRect", scrollRect);
+            SetPrivateField(craftingUI, "_detailsPanel", detailsPanel);
+            SetPrivateField(craftingUI, "_recipeName", recipeName);
+            SetPrivateField(craftingUI, "_resultIcon", iconImage);
+            SetPrivateField(craftingUI, "_resultQuantity", resultQuantity);
+            SetPrivateField(craftingUI, "_ingredientsContainer", ingredientsContainer);
+            SetPrivateField(craftingUI, "_craftButton", craftBtn);
+            SetPrivateField(craftingUI, "_craftButtonText", craftButtonText);
         }
 
         private void CreateDeathScreen()
@@ -345,6 +457,93 @@ namespace VoxelRPG.UI
             SetPrivateField(uiManager, "_inventoryScreen", _inventoryScreen);
             SetPrivateField(uiManager, "_craftingScreen", _craftingScreen);
             SetPrivateField(uiManager, "_deathScreen", _deathScreen);
+        }
+
+        private void CreateCharacterScreen()
+        {
+            _characterScreen = CreateScreen("CharacterScreen");
+            _characterScreen.SetActive(false);
+
+            // Semi-transparent overlay
+            var overlay = _characterScreen.AddComponent<Image>();
+            overlay.color = new Color(0, 0, 0, 0.5f);
+
+            // Center panel
+            var panel = CreatePanel(_characterScreen.transform, "CharacterPanel",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(400, 350));
+            panel.GetComponent<Image>().color = _panelColor;
+
+            var panelLayout = panel.AddComponent<VerticalLayoutGroup>();
+            panelLayout.spacing = 10;
+            panelLayout.padding = new RectOffset(20, 20, 20, 20);
+            panelLayout.childAlignment = TextAnchor.UpperCenter;
+            panelLayout.childControlWidth = true;
+            panelLayout.childControlHeight = false;
+            panelLayout.childForceExpandWidth = true;
+            panelLayout.childForceExpandHeight = false;
+
+            // Title
+            var title = CreateText(panel.transform, "Title", "CHARACTER",
+                TextAlignmentOptions.Center, 24);
+            title.gameObject.AddComponent<LayoutElement>().preferredHeight = 40;
+
+            // Stats content area
+            var statsContainer = new GameObject("StatsContainer");
+            statsContainer.transform.SetParent(panel.transform, false);
+            var statsRect = statsContainer.AddComponent<RectTransform>();
+            statsRect.anchorMin = Vector2.zero;
+            statsRect.anchorMax = Vector2.one;
+            var statsLayout = statsContainer.AddComponent<VerticalLayoutGroup>();
+            statsLayout.spacing = 8;
+            statsLayout.padding = new RectOffset(10, 10, 10, 10);
+            statsLayout.childControlWidth = true;
+            statsLayout.childControlHeight = false;
+            statsLayout.childForceExpandWidth = true;
+            statsLayout.childForceExpandHeight = false;
+
+            // Health stat
+            var healthContainer = new GameObject("HealthStat");
+            healthContainer.transform.SetParent(statsContainer.transform, false);
+            healthContainer.AddComponent<LayoutElement>().preferredHeight = 30;
+            var healthLabel = CreateText(healthContainer.transform, "Label", "Health:",
+                TextAlignmentOptions.Left, 14);
+            healthLabel.rectTransform.anchorMin = Vector2.zero;
+            healthLabel.rectTransform.anchorMax = new Vector2(0.3f, 1);
+            var healthValue = CreateText(healthContainer.transform, "Value", "100/100",
+                TextAlignmentOptions.Right, 14);
+            healthValue.rectTransform.anchorMin = new Vector2(0.3f, 0);
+            healthValue.rectTransform.anchorMax = Vector2.one;
+
+            // Hunger stat
+            var hungerContainer = new GameObject("HungerStat");
+            hungerContainer.transform.SetParent(statsContainer.transform, false);
+            hungerContainer.AddComponent<LayoutElement>().preferredHeight = 30;
+            var hungerLabel = CreateText(hungerContainer.transform, "Label", "Hunger:",
+                TextAlignmentOptions.Left, 14);
+            hungerLabel.rectTransform.anchorMin = Vector2.zero;
+            hungerLabel.rectTransform.anchorMax = new Vector2(0.3f, 1);
+            var hungerValue = CreateText(hungerContainer.transform, "Value", "100/100",
+                TextAlignmentOptions.Right, 14);
+            hungerValue.rectTransform.anchorMin = new Vector2(0.3f, 0);
+            hungerValue.rectTransform.anchorMax = Vector2.one;
+
+            // Inventory count stat
+            var inventoryContainer = new GameObject("InventoryStat");
+            inventoryContainer.transform.SetParent(statsContainer.transform, false);
+            inventoryContainer.AddComponent<LayoutElement>().preferredHeight = 30;
+            var inventoryLabel = CreateText(inventoryContainer.transform, "Label", "Inventory:",
+                TextAlignmentOptions.Left, 14);
+            inventoryLabel.rectTransform.anchorMin = Vector2.zero;
+            inventoryLabel.rectTransform.anchorMax = new Vector2(0.3f, 1);
+            var inventoryValue = CreateText(inventoryContainer.transform, "Value", "0/28",
+                TextAlignmentOptions.Right, 14);
+            inventoryValue.rectTransform.anchorMin = new Vector2(0.3f, 0);
+            inventoryValue.rectTransform.anchorMax = Vector2.one;
+
+            // Close button
+            var closeBtn = CreateButton(panel.transform, "CloseButton", "Close", 40);
+            closeBtn.gameObject.AddComponent<LayoutElement>().preferredHeight = 40;
         }
 
         #region Helper Methods
