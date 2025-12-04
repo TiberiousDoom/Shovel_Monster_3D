@@ -366,23 +366,46 @@ namespace VoxelRPG.Editor
             var existing = AssetDatabase.LoadAssetAtPath<Recipe>(path);
             if (existing != null)
             {
-                Debug.Log($"[Phase1AssetCreator] Recipe '{name}' already exists, skipping.");
+                // Update existing recipe with correct references
+                var serializedExisting = new SerializedObject(existing);
+
+                // Set ingredients
+                var ingredientsProp = serializedExisting.FindProperty("_ingredients");
+                ingredientsProp.arraySize = ingredients.Length;
+                for (int i = 0; i < ingredients.Length; i++)
+                {
+                    var ingredientProp = ingredientsProp.GetArrayElementAtIndex(i);
+                    ingredientProp.FindPropertyRelative("Item").objectReferenceValue = ingredients[i].item;
+                    ingredientProp.FindPropertyRelative("Amount").intValue = ingredients[i].amount;
+                }
+
+                // Set output
+                serializedExisting.FindProperty("_outputItem").objectReferenceValue = result.item;
+                serializedExisting.FindProperty("_outputAmount").intValue = result.amount;
+
+                serializedExisting.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(existing);
+
+                Debug.Log($"[Phase1AssetCreator] Updated recipe '{name}' with correct item references.");
                 return existing;
             }
 
+            // Create the asset FIRST, then configure it
             var recipe = ScriptableObject.CreateInstance<Recipe>();
+            AssetDatabase.CreateAsset(recipe, path);
 
+            // Now use SerializedObject on the created asset
             var serializedObject = new SerializedObject(recipe);
             serializedObject.FindProperty("_id").stringValue = name.ToLowerInvariant();
             serializedObject.FindProperty("_displayName").stringValue = FormatDisplayName(name);
 
             // Set ingredients
-            var ingredientsProp = serializedObject.FindProperty("_ingredients");
-            ingredientsProp.arraySize = ingredients.Length;
+            var ingredientsPropNew = serializedObject.FindProperty("_ingredients");
+            ingredientsPropNew.arraySize = ingredients.Length;
 
             for (int i = 0; i < ingredients.Length; i++)
             {
-                var ingredientProp = ingredientsProp.GetArrayElementAtIndex(i);
+                var ingredientProp = ingredientsPropNew.GetArrayElementAtIndex(i);
                 ingredientProp.FindPropertyRelative("Item").objectReferenceValue = ingredients[i].item;
                 ingredientProp.FindPropertyRelative("Amount").intValue = ingredients[i].amount;
             }
@@ -392,8 +415,8 @@ namespace VoxelRPG.Editor
             serializedObject.FindProperty("_outputAmount").intValue = result.amount;
 
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(recipe);
 
-            AssetDatabase.CreateAsset(recipe, path);
             Debug.Log($"[Phase1AssetCreator] Created recipe: {name}");
 
             return recipe;
