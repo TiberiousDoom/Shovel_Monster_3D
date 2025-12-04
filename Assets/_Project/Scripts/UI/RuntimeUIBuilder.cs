@@ -293,8 +293,10 @@ namespace VoxelRPG.UI
             viewportRect.anchorMax = Vector2.one;
             viewportRect.offsetMin = Vector2.zero;
             viewportRect.offsetMax = Vector2.zero;
-            viewport.AddComponent<Image>().color = Color.clear;
-            viewport.AddComponent<Mask>();
+            var viewportImage = viewport.AddComponent<Image>();
+            viewportImage.color = Color.clear;
+            var mask = viewport.AddComponent<Mask>();
+            mask.showMaskGraphic = false;
 
             // Content area for recipes
             var content = new GameObject("Content");
@@ -303,9 +305,8 @@ namespace VoxelRPG.UI
             contentRect.anchorMin = new Vector2(0, 1);
             contentRect.anchorMax = new Vector2(1, 1);
             contentRect.pivot = new Vector2(0.5f, 1);
-            contentRect.offsetMin = new Vector2(5, 0);
-            contentRect.offsetMax = new Vector2(-5, 0);
-            contentRect.sizeDelta = new Vector2(0, 0);
+            contentRect.anchoredPosition = Vector2.zero;
+            contentRect.sizeDelta = new Vector2(-10, 0); // Width with margins, height set by ContentSizeFitter
             var contentLayout = content.AddComponent<VerticalLayoutGroup>();
             contentLayout.spacing = 4;
             contentLayout.padding = new RectOffset(2, 2, 2, 2);
@@ -313,7 +314,9 @@ namespace VoxelRPG.UI
             contentLayout.childControlHeight = false;
             contentLayout.childForceExpandWidth = true;
             contentLayout.childForceExpandHeight = false;
+            contentLayout.childAlignment = TextAnchor.UpperCenter;
             var contentFitter = content.AddComponent<ContentSizeFitter>();
+            contentFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
             contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             scrollRect.content = contentRect;
