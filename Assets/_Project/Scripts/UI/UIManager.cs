@@ -381,11 +381,31 @@ namespace VoxelRPG.UI
         }
 
         /// <summary>
-        /// Opens the crafting screen.
+        /// Opens the crafting screen for hand crafting.
         /// </summary>
         public void OpenCrafting()
         {
+            OpenCrafting(null);
+        }
+
+        /// <summary>
+        /// Opens the crafting screen for a specific station type.
+        /// </summary>
+        /// <param name="stationType">Station type (null for hand crafting).</param>
+        public void OpenCrafting(string stationType)
+        {
             _screenStack.Push(_currentState);
+
+            // Set station type on CraftingUI before opening
+            if (_craftingScreen != null)
+            {
+                var craftingUI = _craftingScreen.GetComponent<CraftingUI>();
+                if (craftingUI != null)
+                {
+                    craftingUI.SetStationType(stationType);
+                }
+            }
+
             SetState(UIScreenState.Crafting);
         }
 

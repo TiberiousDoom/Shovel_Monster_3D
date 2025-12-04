@@ -16,7 +16,8 @@ MonoBehaviour:
   _displayName: Iron Axe
   _description: A sturdy axe for chopping wood and enemies.
   _icon: {fileID: 0}
-  _dropPrefab: {fileID: 0}
+  _dropPrefab: {fileID: 1000000000000000000, guid: d1e2f3a4b5c6789012345678abcdef01, type: 3}
+  _equippedPrefab: {fileID: 6168974523503083019, guid: 4f9f755a1632bef45aab3fc318dca447, type: 3}
   _maxStackSize: 1
   _category: 3
   _isConsumable: 0

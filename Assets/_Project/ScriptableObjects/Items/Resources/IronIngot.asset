@@ -11,15 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 61445327d38be044f8a9c12a4fb8a15f, type: 3}
   m_Name: IronIngot
-  m_EditorClassIdentifier: VoxelRPG.Core::VoxelRPG.Core.Items.ItemDefinition
-  _id: ironingot
+  m_EditorClassIdentifier:
+  _id: iron_ingot
   _displayName: Iron Ingot
-  _description: Refined iron. Used for crafting iron tools and equipment.
+  _description: A refined bar of iron, ready for crafting.
   _icon: {fileID: 0}
   _dropPrefab: {fileID: 0}
   _maxStackSize: 64
-  _category: 1
+  _category: 0
   _isConsumable: 0
   _isEquippable: 0
   _isPlaceable: 0
-  _baseValue: 10
+  _baseValue: 8

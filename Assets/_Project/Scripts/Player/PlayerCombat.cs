@@ -104,10 +104,8 @@ namespace VoxelRPG.Player
             if (itemDef == null || !itemDef.IsEquippable) return;
             if (itemDef.Category != ItemCategory.Weapon && itemDef.Category != ItemCategory.Tool) return;
 
-            // Spawn weapon prefab
-            // Note: For now we check for a "EquippedPrefab" field or use DropPrefab as fallback
-            // In a full implementation, ItemDefinition would have an equipped prefab field
-            GameObject prefab = itemDef.DropPrefab;
+            // Spawn weapon prefab (uses EquippedPrefab which falls back to DropPrefab if not set)
+            GameObject prefab = itemDef.EquippedPrefab;
             if (prefab == null) return;
 
             // Check if prefab has MeleeWeapon component

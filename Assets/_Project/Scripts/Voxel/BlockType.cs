@@ -45,6 +45,13 @@ namespace VoxelRPG.Voxel
         [Tooltip("Amount of items dropped")]
         [SerializeField] private int _dropAmount = 1;
 
+        [Header("Crafting Station")]
+        [Tooltip("Whether this block acts as a crafting station when interacted with")]
+        [SerializeField] private bool _isCraftingStation;
+
+        [Tooltip("Station type for crafting (e.g., 'Furnace', 'Workbench')")]
+        [SerializeField] private string _stationType;
+
         /// <summary>
         /// Unique identifier for this block type.
         /// </summary>
@@ -94,6 +101,16 @@ namespace VoxelRPG.Voxel
         /// Amount of items dropped when broken.
         /// </summary>
         public int DropAmount => _dropAmount;
+
+        /// <summary>
+        /// Whether this block acts as a crafting station when interacted with.
+        /// </summary>
+        public bool IsCraftingStation => _isCraftingStation;
+
+        /// <summary>
+        /// Station type for crafting (e.g., 'Furnace', 'Workbench').
+        /// </summary>
+        public string StationType => _stationType;
 
         /// <summary>
         /// Static reference to air (null/empty) block type.
