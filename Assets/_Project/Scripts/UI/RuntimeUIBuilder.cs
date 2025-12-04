@@ -403,13 +403,13 @@ namespace VoxelRPG.UI
 
             // Add CraftingUI component and wire references
             var craftingUI = _craftingScreen.AddComponent<CraftingUI>();
-            SetPrivateField(craftingUI, "_recipeListContainer", content);
+            SetPrivateField(craftingUI, "_recipeListContainer", content.transform);
             SetPrivateField(craftingUI, "_recipeScrollRect", scrollRect);
             SetPrivateField(craftingUI, "_detailsPanel", detailsPanel);
             SetPrivateField(craftingUI, "_recipeName", recipeName);
             SetPrivateField(craftingUI, "_resultIcon", iconImage);
             SetPrivateField(craftingUI, "_resultQuantity", resultQuantity);
-            SetPrivateField(craftingUI, "_ingredientsContainer", ingredientsContainer);
+            SetPrivateField(craftingUI, "_ingredientsContainer", ingredientsContainer.transform);
             SetPrivateField(craftingUI, "_craftButton", craftBtn);
             SetPrivateField(craftingUI, "_craftButtonText", craftButtonText);
         }
