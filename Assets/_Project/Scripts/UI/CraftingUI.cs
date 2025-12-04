@@ -153,7 +153,7 @@ namespace VoxelRPG.UI
                 if (recipe == null) continue;
                 recipeCount++;
 
-                var slotObj = Instantiate(prefab, _recipeListContainer);
+                var slotObj = Instantiate(prefab.gameObject, _recipeListContainer);
                 slotObj.SetActive(true); // Ensure the slot is active
                 var slot = slotObj.GetComponent<RecipeSlotUI>();
                 if (slot != null)
