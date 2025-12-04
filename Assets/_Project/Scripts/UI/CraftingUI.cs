@@ -44,6 +44,17 @@ namespace VoxelRPG.UI
         private List<RecipeSlotUI> _recipeSlots = new List<RecipeSlotUI>();
         private Recipe _selectedRecipe;
         private List<CraftingIngredientUI> _ingredientSlots = new List<CraftingIngredientUI>();
+        private string _currentStationType;
+
+        /// <summary>
+        /// Sets the crafting station type to filter recipes for.
+        /// Pass null or empty string for hand crafting (shows all hand-craftable recipes).
+        /// </summary>
+        public void SetStationType(string stationType)
+        {
+            _currentStationType = stationType;
+            Debug.Log($"[CraftingUI] Station type set to: {stationType ?? "Hand Crafting"}");
+        }
 
         private void OnEnable()
         {
@@ -97,8 +108,20 @@ namespace VoxelRPG.UI
                 return;
             }
 
-            // Get all recipes
-            var recipes = _recipeRegistry.GetAll();
+            // Get recipes filtered by station type
+            IEnumerable<Recipe> recipes;
+            if (string.IsNullOrEmpty(_currentStationType))
+            {
+                // Hand crafting - show hand-craftable recipes
+                recipes = _recipeRegistry.GetHandCraftableRecipes();
+            }
+            else
+            {
+                // Station crafting - show recipes for this station + hand-craftable
+                var stationRecipes = _recipeRegistry.GetRecipesForStation(_currentStationType);
+                var handRecipes = _recipeRegistry.GetHandCraftableRecipes();
+                recipes = stationRecipes.Concat(handRecipes).Distinct();
+            }
 
             foreach (var recipe in recipes)
             {

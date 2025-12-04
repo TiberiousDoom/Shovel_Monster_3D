@@ -473,6 +473,19 @@ namespace VoxelRPG.Bootstrap
                         case "SecondaryAction":
                             blockInteraction.OnSecondaryAction(context);
                             break;
+                        case "Interact":
+                            blockInteraction.OnInteract(context);
+                            break;
+                    }
+                };
+
+                // Wire up crafting station interaction to UIManager
+                blockInteraction.OnCraftingStationInteract += (stationType, position) =>
+                {
+                    var uiManager = FindFirstObjectByType<UIManager>();
+                    if (uiManager != null)
+                    {
+                        uiManager.OpenCrafting(stationType);
                     }
                 };
 

@@ -127,7 +127,7 @@ MonoBehaviour:
   _knockbackForce: 5
   _hitboxActivateDelay: 0.1
   _hitboxActiveDuration: 0.2
-  _hitbox: {fileID: 0}
+  _hitbox: {fileID: 6585421109481286272}
   _animator: {fileID: 0}
   _audioSource: {fileID: 0}
   _swingSound: {fileID: 0}
