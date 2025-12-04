@@ -550,6 +550,7 @@ namespace VoxelRPG.UI
 
         public void OnClick()
         {
+            Debug.Log($"[RecipeSlotUI] OnClick - Recipe: {_recipe?.DisplayName ?? "NULL"}, MousePos: {Input.mousePosition}");
             _parent?.SelectRecipe(_recipe);
         }
     }

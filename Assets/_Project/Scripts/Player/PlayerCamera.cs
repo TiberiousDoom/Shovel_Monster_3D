@@ -55,7 +55,9 @@ namespace VoxelRPG.Player
 
         private void LateUpdate()
         {
-            if (!_cursorLocked)
+            // Check actual cursor lock state, not just internal flag
+            // This ensures camera stops when UI opens (UIManager unlocks cursor)
+            if (Cursor.lockState != CursorLockMode.Locked)
             {
                 return;
             }
@@ -85,7 +87,15 @@ namespace VoxelRPG.Player
         /// </summary>
         public void OnLook(InputAction.CallbackContext context)
         {
-            _lookInput = context.ReadValue<Vector2>();
+            // Only accept look input when cursor is locked (gameplay mode)
+            if (Cursor.lockState == CursorLockMode.Locked)
+            {
+                _lookInput = context.ReadValue<Vector2>();
+            }
+            else
+            {
+                _lookInput = Vector2.zero;
+            }
         }
 
         /// <summary>

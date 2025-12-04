@@ -1,4 +1,7 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using TMPro;
 using VoxelRPG.Core;
@@ -65,6 +68,43 @@ namespace VoxelRPG.UI
             scaler.matchWidthOrHeight = 0.5f;
 
             canvasObject.AddComponent<GraphicRaycaster>();
+
+            // Ensure EventSystem exists and is properly configured for Input System
+            EnsureEventSystem();
+        }
+
+        private void EnsureEventSystem()
+        {
+            var existingEventSystem = FindFirstObjectByType<EventSystem>();
+            GameObject eventSystemObj;
+
+            if (existingEventSystem != null)
+            {
+                eventSystemObj = existingEventSystem.gameObject;
+                Debug.Log("[RuntimeUIBuilder] Found existing EventSystem, reconfiguring...");
+            }
+            else
+            {
+                eventSystemObj = new GameObject("EventSystem");
+                eventSystemObj.AddComponent<EventSystem>();
+                Debug.Log("[RuntimeUIBuilder] Created new EventSystem");
+            }
+
+            // Remove old input modules
+            var oldModules = eventSystemObj.GetComponents<BaseInputModule>();
+            foreach (var oldModule in oldModules)
+            {
+                DestroyImmediate(oldModule);
+            }
+
+            // Add InputSystemUIInputModule - required since project uses new Input System only
+            var uiInputModule = eventSystemObj.AddComponent<InputSystemUIInputModule>();
+
+            // Don't assign any action references - let it use defaults
+            // The InputSystemUIInputModule will automatically use Mouse.current.position
+            // when no point action is assigned
+
+            Debug.Log("[RuntimeUIBuilder] Configured EventSystem with InputSystemUIInputModule (default mouse)");
         }
 
         private void CreateHUDScreen()

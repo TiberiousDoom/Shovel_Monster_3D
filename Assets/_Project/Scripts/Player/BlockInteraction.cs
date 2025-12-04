@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.EventSystems;
 using VoxelRPG.Core;
 using VoxelRPG.Core.Items;
 using VoxelRPG.Voxel;
@@ -169,10 +168,14 @@ namespace VoxelRPG.Player
                 return;
             }
 
-            // Don't process interactions when pointer is over UI
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            // Don't process interactions when UI is open (cursor unlocked means UI is active)
+            if (Cursor.lockState != CursorLockMode.Locked)
             {
                 // Clear any queued inputs
+                if (_breakBlockPressed || _placeBlockPressed || _interactPressed)
+                {
+                    Debug.Log($"[BlockInteraction] Blocking input - cursor unlocked. LockState={Cursor.lockState}");
+                }
                 _breakBlockPressed = false;
                 _placeBlockPressed = false;
                 _interactPressed = false;
@@ -181,6 +184,7 @@ namespace VoxelRPG.Player
 
             if (_breakBlockPressed)
             {
+                Debug.Log($"[BlockInteraction] Processing break - cursor IS locked. LockState={Cursor.lockState}");
                 TryBreakBlock();
                 _breakBlockPressed = false;
             }
