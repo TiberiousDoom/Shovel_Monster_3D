@@ -266,10 +266,14 @@ namespace VoxelRPG.UI
             title.rectTransform.sizeDelta = new Vector2(0, 40);
 
             // Left side: Recipe list
-            var listContainer = CreatePanel(panel.transform, "ListContainer",
-                new Vector2(0, 1), new Vector2(0.5f, 1),
-                new Vector2(10, -50), new Vector2(-20, -60));
-            listContainer.GetComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
+            var listContainer = new GameObject("ListContainer");
+            listContainer.transform.SetParent(panel.transform, false);
+            var listRect = listContainer.AddComponent<RectTransform>();
+            listRect.anchorMin = new Vector2(0, 0);
+            listRect.anchorMax = new Vector2(0.5f, 1);
+            listRect.offsetMin = new Vector2(10, 50);
+            listRect.offsetMax = new Vector2(-10, -10);
+            listContainer.AddComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
             // Recipe list with scroll rect
             var scrollRectObj = new GameObject("RecipeListScroll");
@@ -316,10 +320,14 @@ namespace VoxelRPG.UI
             scrollRect.viewport = viewportRect;
 
             // Right side: Recipe details
-            var detailsPanel = CreatePanel(panel.transform, "DetailsPanel",
-                new Vector2(0.5f, 1), new Vector2(1, 1),
-                new Vector2(-10, -50), new Vector2(-20, -60));
-            detailsPanel.GetComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
+            var detailsPanel = new GameObject("DetailsPanel");
+            detailsPanel.transform.SetParent(panel.transform, false);
+            var detailsRect = detailsPanel.AddComponent<RectTransform>();
+            detailsRect.anchorMin = new Vector2(0.5f, 0);
+            detailsRect.anchorMax = new Vector2(1, 1);
+            detailsRect.offsetMin = new Vector2(10, 50);
+            detailsRect.offsetMax = new Vector2(-10, -10);
+            detailsPanel.AddComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
             // Recipe name
             var recipeName = CreateText(detailsPanel.transform, "RecipeName", "Select a recipe",
