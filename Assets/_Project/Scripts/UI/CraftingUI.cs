@@ -186,7 +186,7 @@ namespace VoxelRPG.UI
             var nameText = nameObj.AddComponent<TextMeshProUGUI>();
             nameText.text = "Recipe Name";
             nameText.fontSize = 16;
-            nameText.alignment = TextAlignmentOptions.MiddleLeft;
+            nameText.alignment = TextAlignmentOptions.MiddleCenter;
             nameText.color = Color.white;
 
             var slot = prefabObj.AddComponent<RecipeSlotUI>();
@@ -374,7 +374,7 @@ namespace VoxelRPG.UI
             var quantityText = quantityObj.AddComponent<TextMeshProUGUI>();
             quantityText.text = "0/0";
             quantityText.fontSize = 14;
-            quantityText.alignment = TextAlignmentOptions.MiddleLeft;
+            quantityText.alignment = TextAlignmentOptions.MiddleCenter;
             quantityText.color = Color.white;
 
             var slot = prefabObj.AddComponent<CraftingIngredientUI>();
