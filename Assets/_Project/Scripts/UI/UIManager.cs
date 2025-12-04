@@ -400,10 +400,15 @@ namespace VoxelRPG.UI
             if (_craftingScreen != null)
             {
                 var craftingUI = _craftingScreen.GetComponent<CraftingUI>();
+                Debug.Log($"[UIManager] OpenCrafting - CraftingScreen exists, CraftingUI component: {(craftingUI != null ? "found" : "NULL")}");
                 if (craftingUI != null)
                 {
                     craftingUI.SetStationType(stationType);
                 }
+            }
+            else
+            {
+                Debug.LogWarning("[UIManager] OpenCrafting - _craftingScreen is NULL!");
             }
 
             SetState(UIScreenState.Crafting);
