@@ -38,6 +38,10 @@ namespace VoxelRPG.UI
         [SerializeField] private TMP_InputField _searchInput;
         [SerializeField] private TMP_Dropdown _categoryDropdown;
 
+        // Runtime prefabs created if not provided
+        private RecipeSlotUI _runtimeRecipeSlotPrefab;
+        private CraftingIngredientUI _runtimeIngredientPrefab;
+
         private IRecipeRegistry _recipeRegistry;
         private CraftingManager _craftingManager;
         private PlayerInventory _playerInventory;
@@ -103,7 +107,14 @@ namespace VoxelRPG.UI
             }
             _recipeSlots.Clear();
 
-            if (_recipeRegistry == null || _recipeListContainer == null || _recipeSlotPrefab == null)
+            if (_recipeRegistry == null || _recipeListContainer == null)
+            {
+                return;
+            }
+
+            // Create runtime prefab if not provided
+            var prefab = _recipeSlotPrefab ?? _runtimeRecipeSlotPrefab ?? CreateRecipeSlotPrefab();
+            if (prefab == null)
             {
                 return;
             }
@@ -127,7 +138,7 @@ namespace VoxelRPG.UI
             {
                 if (recipe == null) continue;
 
-                var slotObj = Instantiate(_recipeSlotPrefab, _recipeListContainer);
+                var slotObj = Instantiate(prefab, _recipeListContainer);
                 var slot = slotObj.GetComponent<RecipeSlotUI>();
                 if (slot != null)
                 {
@@ -136,6 +147,64 @@ namespace VoxelRPG.UI
                     _recipeSlots.Add(slot);
                 }
             }
+        }
+
+        private RecipeSlotUI CreateRecipeSlotPrefab()
+        {
+            var prefabObj = new GameObject("RecipeSlotPrefab");
+            prefabObj.SetActive(false);
+
+            var rect = prefabObj.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(300, 40);
+
+            var image = prefabObj.AddComponent<Image>();
+            image.color = new Color(0.3f, 0.5f, 0.3f, 0.8f);
+
+            var button = prefabObj.AddComponent<Button>();
+            button.targetGraphic = image;
+
+            // Icon
+            var icon = new GameObject("Icon");
+            icon.transform.SetParent(prefabObj.transform, false);
+            var iconRect = icon.AddComponent<RectTransform>();
+            iconRect.anchorMin = new Vector2(0, 0.5f);
+            iconRect.anchorMax = new Vector2(0.15f, 0.5f);
+            iconRect.pivot = new Vector2(0.5f, 0.5f);
+            iconRect.sizeDelta = new Vector2(32, 32);
+            iconRect.anchoredPosition = new Vector2(20, 0);
+            var iconImage = icon.AddComponent<Image>();
+            iconImage.color = Color.clear;
+
+            // Name text
+            var nameObj = new GameObject("Name");
+            nameObj.transform.SetParent(prefabObj.transform, false);
+            var nameRect = nameObj.AddComponent<RectTransform>();
+            nameRect.anchorMin = new Vector2(0.15f, 0);
+            nameRect.anchorMax = Vector2.one;
+            nameRect.offsetMin = new Vector2(5, 0);
+            nameRect.offsetMax = new Vector2(-5, 0);
+            var nameText = nameObj.AddComponent<TextMeshProUGUI>();
+            nameText.text = "Recipe Name";
+            nameText.fontSize = 16;
+            nameText.alignment = TextAlignmentOptions.MiddleLeft;
+            nameText.color = Color.white;
+
+            var slot = prefabObj.AddComponent<RecipeSlotUI>();
+
+            // Set private fields via reflection
+            var iconField = typeof(RecipeSlotUI).GetField("_icon", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (iconField != null) iconField.SetValue(slot, iconImage);
+
+            var nameField = typeof(RecipeSlotUI).GetField("_nameText", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (nameField != null) nameField.SetValue(slot, nameText);
+
+            var bgField = typeof(RecipeSlotUI).GetField("_backgroundImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (bgField != null) bgField.SetValue(slot, image);
+
+            button.onClick.AddListener(() => slot.OnClick());
+
+            _runtimeRecipeSlotPrefab = slot;
+            return slot;
         }
 
         private void RefreshRecipeAvailability()
@@ -247,7 +316,14 @@ namespace VoxelRPG.UI
             }
             _ingredientSlots.Clear();
 
-            if (_selectedRecipe == null || _ingredientsContainer == null || _ingredientPrefab == null)
+            if (_selectedRecipe == null || _ingredientsContainer == null)
+            {
+                return;
+            }
+
+            // Create runtime prefab if not provided
+            var prefab = _ingredientPrefab ?? _runtimeIngredientPrefab ?? CreateIngredientPrefab();
+            if (prefab == null)
             {
                 return;
             }
@@ -255,7 +331,7 @@ namespace VoxelRPG.UI
             // Create ingredient slots
             foreach (var ingredient in _selectedRecipe.Ingredients)
             {
-                var slotObj = Instantiate(_ingredientPrefab, _ingredientsContainer);
+                var slotObj = Instantiate(prefab, _ingredientsContainer);
                 var slot = slotObj.GetComponent<CraftingIngredientUI>();
                 if (slot != null)
                 {
@@ -265,6 +341,53 @@ namespace VoxelRPG.UI
                     _ingredientSlots.Add(slot);
                 }
             }
+        }
+
+        private CraftingIngredientUI CreateIngredientPrefab()
+        {
+            var prefabObj = new GameObject("IngredientPrefab");
+            prefabObj.SetActive(false);
+
+            var layout = prefabObj.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 5;
+            layout.padding = new RectOffset(5, 5, 2, 2);
+            layout.childControlWidth = false;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = true;
+
+            var rect = prefabObj.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(200, 32);
+
+            // Icon
+            var icon = new GameObject("Icon");
+            icon.transform.SetParent(prefabObj.transform, false);
+            var iconRect = icon.AddComponent<RectTransform>();
+            iconRect.sizeDelta = new Vector2(32, 32);
+            var iconImage = icon.AddComponent<Image>();
+            iconImage.color = Color.clear;
+            icon.AddComponent<LayoutElement>().preferredWidth = 32;
+
+            // Quantity text
+            var quantityObj = new GameObject("Quantity");
+            quantityObj.transform.SetParent(prefabObj.transform, false);
+            var quantityText = quantityObj.AddComponent<TextMeshProUGUI>();
+            quantityText.text = "0/0";
+            quantityText.fontSize = 14;
+            quantityText.alignment = TextAlignmentOptions.MiddleLeft;
+            quantityText.color = Color.white;
+
+            var slot = prefabObj.AddComponent<CraftingIngredientUI>();
+
+            // Set private fields via reflection
+            var iconField = typeof(CraftingIngredientUI).GetField("_icon", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (iconField != null) iconField.SetValue(slot, iconImage);
+
+            var quantityField = typeof(CraftingIngredientUI).GetField("_quantityText", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (quantityField != null) quantityField.SetValue(slot, quantityText);
+
+            _runtimeIngredientPrefab = slot;
+            return slot;
         }
 
         private void ClearSelection()
