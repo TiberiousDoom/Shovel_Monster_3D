@@ -11,7 +11,8 @@
       "Bash(findstr:*)",
       "Bash(cd:*)",
       "Bash(git pull:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
