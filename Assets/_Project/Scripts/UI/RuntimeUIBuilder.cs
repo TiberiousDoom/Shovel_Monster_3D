@@ -266,10 +266,15 @@ namespace VoxelRPG.UI
             title.rectTransform.sizeDelta = new Vector2(0, 40);
 
             // Left side: Recipe list
-            var listContainer = CreatePanel(panel.transform, "ListContainer",
-                new Vector2(0, 1), new Vector2(0.5f, 1),
-                new Vector2(10, -50), new Vector2(-20, -60));
-            listContainer.GetComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
+            var listContainer = new GameObject("ListContainer");
+            listContainer.transform.SetParent(panel.transform, false);
+            var listRect = listContainer.AddComponent<RectTransform>();
+            listRect.anchorMin = new Vector2(0, 0);
+            listRect.anchorMax = new Vector2(0.5f, 1);
+            listRect.offsetMin = new Vector2(10, 50);
+            listRect.offsetMax = new Vector2(-10, -50);
+            var listImage = listContainer.AddComponent<Image>();
+            listImage.color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
             // Recipe list with scroll rect
             var scrollRectObj = new GameObject("RecipeListScroll");
@@ -316,10 +321,15 @@ namespace VoxelRPG.UI
             scrollRect.viewport = viewportRect;
 
             // Right side: Recipe details
-            var detailsPanel = CreatePanel(panel.transform, "DetailsPanel",
-                new Vector2(0.5f, 1), new Vector2(1, 1),
-                new Vector2(-10, -50), new Vector2(-20, -60));
-            detailsPanel.GetComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
+            var detailsPanel = new GameObject("DetailsPanel");
+            detailsPanel.transform.SetParent(panel.transform, false);
+            var detailsRect = detailsPanel.AddComponent<RectTransform>();
+            detailsRect.anchorMin = new Vector2(0.5f, 0);
+            detailsRect.anchorMax = new Vector2(1, 1);
+            detailsRect.offsetMin = new Vector2(10, 50);
+            detailsRect.offsetMax = new Vector2(-10, -50);
+            var detailsImage = detailsPanel.AddComponent<Image>();
+            detailsImage.color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
             // Recipe name
             var recipeName = CreateText(detailsPanel.transform, "RecipeName", "Select a recipe",
@@ -331,10 +341,15 @@ namespace VoxelRPG.UI
             recipeName.rectTransform.offsetMax = new Vector2(-5, 0);
 
             // Result icon and quantity
-            var resultContainer = CreatePanel(detailsPanel.transform, "ResultContainer",
-                new Vector2(0, 1), new Vector2(0.3f, 1),
-                new Vector2(5, -50), new Vector2(-5, -80));
-            resultContainer.GetComponent<Image>().color = Color.clear;
+            var resultContainer = new GameObject("ResultContainer");
+            resultContainer.transform.SetParent(detailsPanel.transform, false);
+            var resultRect = resultContainer.AddComponent<RectTransform>();
+            resultRect.anchorMin = new Vector2(0, 0.7f);
+            resultRect.anchorMax = new Vector2(0.3f, 1);
+            resultRect.offsetMin = new Vector2(5, 5);
+            resultRect.offsetMax = new Vector2(-5, -5);
+            var resultImage = resultContainer.AddComponent<Image>();
+            resultImage.color = Color.clear;
 
             var resultIcon = new GameObject("ResultIcon");
             resultIcon.transform.SetParent(resultContainer.transform, false);
