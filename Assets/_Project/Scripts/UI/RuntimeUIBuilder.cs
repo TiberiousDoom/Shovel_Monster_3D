@@ -263,34 +263,27 @@ namespace VoxelRPG.UI
             title.rectTransform.anchoredPosition = new Vector2(0, -10);
             title.rectTransform.sizeDelta = new Vector2(0, 40);
 
-            // Recipe list ScrollView
+            // Recipe list area with scroll view
             var scrollView = new GameObject("RecipeScrollView");
             scrollView.transform.SetParent(panel.transform, false);
             var scrollRect = scrollView.AddComponent<ScrollRect>();
-            var scrollRectTransform = scrollView.GetComponent<RectTransform>();
-            scrollRectTransform.anchorMin = new Vector2(0, 0.15f);
-            scrollRectTransform.anchorMax = new Vector2(1, 0.88f);
-            scrollRectTransform.offsetMin = new Vector2(10, 0);
-            scrollRectTransform.offsetMax = new Vector2(-10, 0);
-            var scrollBg = scrollView.AddComponent<Image>();
-            scrollBg.color = new Color(0.15f, 0.15f, 0.15f, 1f);
-            scrollRect.horizontal = false;
-            scrollRect.vertical = true;
-            scrollRect.movementType = ScrollRect.MovementType.Clamped;
-            scrollRect.scrollSensitivity = 20f;
+            var scrollViewRect = scrollView.GetComponent<RectTransform>();
+            scrollViewRect.anchorMin = new Vector2(0, 0.15f);
+            scrollViewRect.anchorMax = new Vector2(1, 0.85f);
+            scrollViewRect.offsetMin = new Vector2(10, 0);
+            scrollViewRect.offsetMax = new Vector2(-10, -50);
 
             // Viewport
             var viewport = new GameObject("Viewport");
             viewport.transform.SetParent(scrollView.transform, false);
-            var viewportRect = viewport.AddComponent<RectTransform>();
+            viewport.AddComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
+            viewport.AddComponent<Mask>().showMaskGraphic = true;
+            var viewportRect = viewport.GetComponent<RectTransform>();
             viewportRect.anchorMin = Vector2.zero;
             viewportRect.anchorMax = Vector2.one;
+            viewportRect.sizeDelta = Vector2.zero;
             viewportRect.offsetMin = Vector2.zero;
             viewportRect.offsetMax = Vector2.zero;
-            viewport.AddComponent<Image>().color = Color.clear;
-            var mask = viewport.AddComponent<Mask>();
-            mask.showMaskGraphic = false;
-            scrollRect.viewport = viewportRect;
 
             // Content container for recipe slots
             var content = new GameObject("Content");
@@ -299,33 +292,36 @@ namespace VoxelRPG.UI
             contentRect.anchorMin = new Vector2(0, 1);
             contentRect.anchorMax = new Vector2(1, 1);
             contentRect.pivot = new Vector2(0.5f, 1);
-            contentRect.offsetMin = new Vector2(0, 0);
-            contentRect.offsetMax = new Vector2(0, 0);
-            var verticalLayout = content.AddComponent<VerticalLayoutGroup>();
-            verticalLayout.spacing = 4;
-            verticalLayout.padding = new RectOffset(4, 4, 4, 4);
-            verticalLayout.childAlignment = TextAnchor.UpperCenter;
-            verticalLayout.childControlWidth = true;
-            verticalLayout.childControlHeight = false;
-            verticalLayout.childForceExpandWidth = true;
-            verticalLayout.childForceExpandHeight = false;
+            contentRect.sizeDelta = new Vector2(0, 0);
+
+            var contentLayout = content.AddComponent<VerticalLayoutGroup>();
+            contentLayout.spacing = 4;
+            contentLayout.padding = new RectOffset(5, 5, 5, 5);
+            contentLayout.childControlWidth = true;
+            contentLayout.childControlHeight = false;
+            contentLayout.childForceExpandWidth = true;
+            contentLayout.childForceExpandHeight = false;
+
             var contentSizeFitter = content.AddComponent<ContentSizeFitter>();
             contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            scrollRect.content = contentRect;
 
-            // Create the RecipeSlotUI prefab template (hidden, used for instantiation)
+            scrollRect.viewport = viewportRect;
+            scrollRect.content = contentRect;
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+
+            // Create recipe slot prefab template (we'll use it as a template, not instantiate from Resources)
             var recipeSlotPrefab = CreateRecipeSlotPrefab();
 
             // Craft button
             var craftBtn = CreateButton(panel.transform, "CraftButton", "Craft", 40);
-            var craftBtnRect = craftBtn.GetComponent<RectTransform>();
-            craftBtnRect.anchorMin = new Vector2(0.5f, 0);
-            craftBtnRect.anchorMax = new Vector2(0.5f, 0);
-            craftBtnRect.pivot = new Vector2(0.5f, 0);
-            craftBtnRect.anchoredPosition = new Vector2(0, 20);
-            craftBtnRect.sizeDelta = new Vector2(200, 40);
+            craftBtn.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 0);
+            craftBtn.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 0);
+            craftBtn.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0);
+            craftBtn.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 20);
+            craftBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(200, 40);
 
-            // Add CraftingUI component and wire up fields
+            // Add CraftingUI component and wire up references
             var craftingUI = _craftingScreen.AddComponent<CraftingUI>();
             SetPrivateField(craftingUI, "_recipeListContainer", content.transform);
             SetPrivateField(craftingUI, "_recipeSlotPrefab", recipeSlotPrefab);
@@ -335,69 +331,54 @@ namespace VoxelRPG.UI
 
         private RecipeSlotUI CreateRecipeSlotPrefab()
         {
-            // Create a prefab template for recipe slots
+            // Create a template recipe slot (hidden, used as prefab)
             var slotObj = new GameObject("RecipeSlotPrefab");
             slotObj.transform.SetParent(_canvas.transform, false);
-            slotObj.SetActive(false); // Hidden template
+            slotObj.SetActive(false);
 
-            var rect = slotObj.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(0, 48);
-            var layout = slotObj.AddComponent<LayoutElement>();
-            layout.preferredHeight = 48;
-            layout.flexibleWidth = 1;
+            var slotRect = slotObj.AddComponent<RectTransform>();
+            slotRect.sizeDelta = new Vector2(0, 50);
 
-            var bgImage = slotObj.AddComponent<Image>();
-            bgImage.color = _slotColor;
+            // Background
+            var bg = slotObj.AddComponent<Image>();
+            bg.color = new Color(0.25f, 0.25f, 0.25f, 1f);
 
-            // Add Button for click handling
+            // Add button component for click handling
             var button = slotObj.AddComponent<Button>();
-            button.targetGraphic = bgImage;
-            var colors = button.colors;
-            colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1.2f, 1.2f, 1.2f, 1f);
-            colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
-            button.colors = colors;
+            button.targetGraphic = bg;
 
-            var slotUI = slotObj.AddComponent<RecipeSlotUI>();
-
-            // Wire button to call OnClick
-            button.onClick.AddListener(() => slotUI.OnClick());
+            // Layout for icon and text
+            var layout = slotObj.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 10;
+            layout.padding = new RectOffset(10, 10, 5, 5);
+            layout.childAlignment = TextAnchor.MiddleLeft;
+            layout.childControlWidth = false;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = true;
 
             // Icon
-            var icon = new GameObject("Icon");
-            icon.transform.SetParent(slotObj.transform, false);
-            var iconRect = icon.AddComponent<RectTransform>();
-            iconRect.anchorMin = new Vector2(0, 0.1f);
-            iconRect.anchorMax = new Vector2(0, 0.9f);
-            iconRect.pivot = new Vector2(0, 0.5f);
-            iconRect.anchoredPosition = new Vector2(6, 0);
-            iconRect.sizeDelta = new Vector2(36, 0);
-            var iconImage = icon.AddComponent<Image>();
-            iconImage.color = Color.white;
-            iconImage.preserveAspect = true;
-            iconImage.raycastTarget = false;
+            var iconObj = new GameObject("Icon");
+            iconObj.transform.SetParent(slotObj.transform, false);
+            var icon = iconObj.AddComponent<Image>();
+            icon.color = Color.white;
+            var iconLayout = iconObj.AddComponent<LayoutElement>();
+            iconLayout.preferredWidth = 40;
+            iconLayout.preferredHeight = 40;
 
             // Name text
-            var nameObj = new GameObject("Name");
-            nameObj.transform.SetParent(slotObj.transform, false);
-            var nameRect = nameObj.AddComponent<RectTransform>();
-            nameRect.anchorMin = new Vector2(0, 0);
-            nameRect.anchorMax = new Vector2(1, 1);
-            nameRect.offsetMin = new Vector2(50, 4);
-            nameRect.offsetMax = new Vector2(-8, -4);
-            var nameText = nameObj.AddComponent<TextMeshProUGUI>();
-            nameText.fontSize = 16;
-            nameText.alignment = TextAlignmentOptions.MidlineLeft;
-            nameText.color = Color.white;
-            nameText.raycastTarget = false;
+            var nameText = CreateText(slotObj.transform, "NameText", "Recipe Name",
+                TextAlignmentOptions.Left, 16);
+            nameText.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
 
-            // Wire up the RecipeSlotUI fields
-            SetPrivateField(slotUI, "_icon", iconImage);
+            // Add RecipeSlotUI component
+            var slotUI = slotObj.AddComponent<RecipeSlotUI>();
+            SetPrivateField(slotUI, "_icon", icon);
             SetPrivateField(slotUI, "_nameText", nameText);
-            SetPrivateField(slotUI, "_backgroundImage", bgImage);
-            SetPrivateField(slotUI, "_canCraftColor", new Color(0.3f, 0.5f, 0.3f, 0.8f));
-            SetPrivateField(slotUI, "_cannotCraftColor", new Color(0.3f, 0.3f, 0.3f, 0.5f));
-            SetPrivateField(slotUI, "_selectedColor", new Color(0.4f, 0.6f, 0.4f, 0.9f));
+            SetPrivateField(slotUI, "_backgroundImage", bg);
+
+            // Wire button click to slot
+            button.onClick.AddListener(() => slotUI.OnClick());
 
             return slotUI;
         }

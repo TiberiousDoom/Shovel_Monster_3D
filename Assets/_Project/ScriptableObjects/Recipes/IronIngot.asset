@@ -11,8 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 43547a647e51a684c9724bf75da5b4a2, type: 3}
   m_Name: IronIngot
-  m_EditorClassIdentifier:
-  _id: iron_ingot_recipe
+  m_EditorClassIdentifier: VoxelRPG.Core::VoxelRPG.Core.Crafting.Recipe
+  _id: ironingot
   _displayName: Iron Ingot
   _ingredients:
   - Item: {fileID: 11400000, guid: a1b2c3d4e5f6789012345678abcdef05, type: 2}
@@ -21,7 +21,7 @@ MonoBehaviour:
     Amount: 1
   _outputItem: {fileID: 11400000, guid: a1b2c3d4e5f6789012345678abcdef09, type: 2}
   _outputAmount: 1
-  _requiredStation: Furnace
-  _craftTime: 3
+  _requiredStation: 
+  _craftTime: 0
   _unlockedByDefault: 1
-  _category: 7
+  _category: 0
