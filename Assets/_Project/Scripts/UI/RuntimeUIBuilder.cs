@@ -279,7 +279,7 @@ namespace VoxelRPG.UI
             var scrollRectObj = new GameObject("RecipeListScroll");
             scrollRectObj.transform.SetParent(listContainer.transform, false);
             var scrollRect = scrollRectObj.AddComponent<ScrollRect>();
-            var scrollRectRect = scrollRectObj.AddComponent<RectTransform>();
+            var scrollRectRect = scrollRectObj.GetComponent<RectTransform>();
             scrollRectRect.anchorMin = Vector2.zero;
             scrollRectRect.anchorMax = Vector2.one;
             scrollRectRect.offsetMin = Vector2.zero;
