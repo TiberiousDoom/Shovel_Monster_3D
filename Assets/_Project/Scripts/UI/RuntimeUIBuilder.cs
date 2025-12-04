@@ -311,7 +311,7 @@ namespace VoxelRPG.UI
             contentLayout.spacing = 4;
             contentLayout.padding = new RectOffset(2, 2, 2, 2);
             contentLayout.childControlWidth = true;
-            contentLayout.childControlHeight = false;
+            contentLayout.childControlHeight = true;
             contentLayout.childForceExpandWidth = true;
             contentLayout.childForceExpandHeight = false;
             contentLayout.childAlignment = TextAnchor.UpperCenter;
