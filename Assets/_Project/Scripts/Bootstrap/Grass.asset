@@ -25,6 +25,8 @@ MonoBehaviour:
   _lightEmission: 0
   _hardness: 0.8
   _isPlaceable: 1
+  _droppedItem: {fileID: 11400000, guid: a1b2c3d4e5f6789012345678abcdef03, type: 2}
+  _dropAmount: 1
   _preferredTool: 3
   _minimumToolTier: 0
   _footstepSound: {fileID: 0}

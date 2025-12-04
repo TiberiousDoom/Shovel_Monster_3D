@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c2566861c5a495f439b0b5766455ca72, type: 3}
   m_Name: Zombie
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   _id: zombie
   _displayName: Zombie
   _description: A shambling undead creature that attacks at night.
@@ -37,4 +37,4 @@ MonoBehaviour:
   _hurtSound: {fileID: 0}
   _deathSound: {fileID: 0}
   _ambientSounds: []
-  _prefab: {fileID: 0}
+  _prefab: {fileID: 8416630084465821477, guid: 7f2ab37f2434950458059bc6967c2fab, type: 3}

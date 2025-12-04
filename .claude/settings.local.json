@@ -9,7 +9,9 @@
       "Bash(dir \"%LOCALAPPDATA%\\Claude Code\")",
       "Bash(powershell -Command:*)",
       "Bash(findstr:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(git pull:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

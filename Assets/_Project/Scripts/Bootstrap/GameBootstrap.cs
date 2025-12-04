@@ -3,12 +3,14 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using VoxelRPG.Combat;
 using VoxelRPG.Core;
+using VoxelRPG.Core.Crafting;
 using VoxelRPG.Core.Items;
 using VoxelRPG.Player;
 using VoxelRPG.UI;
 using VoxelRPG.Voxel;
 using VoxelRPG.Voxel.Generation;
 using VoxelRPG.World;
+using VoxelRPG.Core.Crafting;
 
 namespace VoxelRPG.Bootstrap
 {
@@ -38,7 +40,10 @@ namespace VoxelRPG.Bootstrap
         [SerializeField] private BlockType _groundBlock;
 
         [Header("Player Settings")]
-        [Tooltip("X and Z position for spawn. Y is calculated from terrain if Auto Spawn Height is enabled.")]
+        [Tooltip("If true, spawn player at the center of the world. Otherwise use manual spawn position.")]
+        [SerializeField] private bool _spawnAtWorldCenter = true;
+
+        [Tooltip("Manual spawn position (only used if Spawn At World Center is false). Y is calculated from terrain if Auto Spawn Height is enabled.")]
         [SerializeField] private Vector3 _playerSpawnPosition = new Vector3(32f, 50f, 32f);
 
         [Tooltip("Automatically place player on top of terrain at spawn X,Z position")]
@@ -60,6 +65,10 @@ namespace VoxelRPG.Bootstrap
         [Tooltip("Monster types that can spawn")]
         [SerializeField] private MonsterDefinition[] _monsterTypes;
 
+        [Header("Crafting")]
+        [Tooltip("Recipe registry containing all crafting recipes")]
+        [SerializeField] private VoxelRPG.Core.Crafting.RecipeRegistry _recipeRegistry;
+
         private WorldGenerator _worldGenerator;
 
         private void Start()
@@ -68,6 +77,7 @@ namespace VoxelRPG.Bootstrap
             SetupWorld();
             SetupLighting();
             SetupTimeSystem();
+            SetupCrafting();
             SetupMonsterSpawner();
             SetupUI();
             // Player setup is done after terrain generation in the coroutine
@@ -201,6 +211,7 @@ namespace VoxelRPG.Bootstrap
             // Check if player already exists
             if (FindFirstObjectByType<PlayerController>() != null)
             {
+                ConfigureSpawnerWithPlayer();
                 return;
             }
 
@@ -216,16 +227,35 @@ namespace VoxelRPG.Bootstrap
             {
                 CreateDefaultPlayer(spawnPos);
             }
+
+            // Configure monster spawner with player reference
+            ConfigureSpawnerWithPlayer();
         }
 
         private Vector3 CalculateSpawnPosition()
         {
+            var world = FindFirstObjectByType<VoxelWorld>();
             var spawnPos = _playerSpawnPosition;
+
+            // Calculate spawn position at world center if enabled
+            if (_spawnAtWorldCenter && world != null)
+            {
+                // Get world center in block coordinates
+                int centerBlockX = world.WorldSizeInBlocks / 2;
+                int centerBlockZ = world.WorldSizeInBlocks / 2;
+
+                // Convert to Unity world coordinates (accounting for BLOCK_SIZE)
+                spawnPos.x = centerBlockX * VoxelChunk.BLOCK_SIZE;
+                spawnPos.z = centerBlockZ * VoxelChunk.BLOCK_SIZE;
+
+                Debug.Log($"[GameBootstrap] Spawning at world center: block ({centerBlockX}, {centerBlockZ}) -> Unity ({spawnPos.x}, {spawnPos.z})");
+            }
 
             if (_autoSpawnHeight)
             {
-                int spawnX = Mathf.RoundToInt(_playerSpawnPosition.x);
-                int spawnZ = Mathf.RoundToInt(_playerSpawnPosition.z);
+                // Convert Unity position back to block coordinates for terrain lookup
+                int spawnX = Mathf.RoundToInt(spawnPos.x / VoxelChunk.BLOCK_SIZE);
+                int spawnZ = Mathf.RoundToInt(spawnPos.z / VoxelChunk.BLOCK_SIZE);
 
                 // Get terrain height from world generator or use flat terrain height
                 int terrainHeight;
@@ -243,7 +273,6 @@ namespace VoxelRPG.Bootstrap
 
                 // Find the actual surface height by scanning upward from terrain
                 // This accounts for any blocks that weren't cleared
-                var world = FindFirstObjectByType<VoxelWorld>();
                 int actualSurface = terrainHeight;
                 if (world != null)
                 {
@@ -265,7 +294,8 @@ namespace VoxelRPG.Bootstrap
 
                 // Spawn player 1 block above the actual surface (feet on ground)
                 // actualSurface is the Y where solid block exists, so +1 puts feet on top of it
-                spawnPos.y = actualSurface + 1f;
+                // Convert to Unity world coordinates by multiplying by BLOCK_SIZE
+                spawnPos.y = (actualSurface + 1) * VoxelChunk.BLOCK_SIZE;
 
                 Debug.Log($"[GameBootstrap] Auto spawn height: terrain={terrainHeight}, actualSurface={actualSurface}, spawn Y={spawnPos.y}");
             }
@@ -340,7 +370,12 @@ namespace VoxelRPG.Bootstrap
             camera.farClipPlane = 500f;
             camera.fieldOfView = 70f;
 
-            // Add audio listener
+            // Add audio listener (ensure only one exists in scene)
+            var existingListener = FindFirstObjectByType<AudioListener>();
+            if (existingListener != null)
+            {
+                Destroy(existingListener);
+            }
             cameraObject.AddComponent<AudioListener>();
 
             // Add PlayerCamera component
@@ -359,9 +394,27 @@ namespace VoxelRPG.Bootstrap
             var playerStats = playerObject.AddComponent<PlayerStats>();
             var playerInventory = playerObject.AddComponent<PlayerInventory>();
             var deathHandler = playerObject.AddComponent<DeathHandler>();
+            var survivalDebug = playerObject.AddComponent<PlayerSurvivalDebug>();
 
             // Configure hunger drain: 1 unit per minute = 1/60 per second
             hungerSystem.HungerDecayRate = 1f / 60f;
+
+            // Add Hurtbox for receiving damage from monsters
+            // Create a child GameObject with a trigger collider for the hurtbox
+            var hurtboxObject = new GameObject("Hurtbox");
+            hurtboxObject.transform.SetParent(playerObject.transform);
+            hurtboxObject.transform.localPosition = new Vector3(0, 0.9f, 0); // Center of player
+            hurtboxObject.layer = playerObject.layer;
+
+            // Add capsule collider matching player's body
+            var hurtboxCollider = hurtboxObject.AddComponent<CapsuleCollider>();
+            hurtboxCollider.height = 1.8f;
+            hurtboxCollider.radius = 0.4f;
+            hurtboxCollider.isTrigger = true;
+
+            // Add Hurtbox component - it will find HealthSystem on parent
+            hurtboxObject.AddComponent<Hurtbox>();
+            Debug.Log("[GameBootstrap] Added Hurtbox to player for damage detection.");
 
             // Give starting item if configured
             if (_startingItem != null)
@@ -421,6 +474,19 @@ namespace VoxelRPG.Bootstrap
                         case "SecondaryAction":
                             blockInteraction.OnSecondaryAction(context);
                             break;
+                        case "Interact":
+                            blockInteraction.OnInteract(context);
+                            break;
+                    }
+                };
+
+                // Wire up crafting station interaction to UIManager
+                blockInteraction.OnCraftingStationInteract += (stationType, position) =>
+                {
+                    var uiManager = FindFirstObjectByType<UIManager>();
+                    if (uiManager != null)
+                    {
+                        uiManager.OpenCrafting(stationType);
                     }
                 };
 
@@ -499,20 +565,75 @@ namespace VoxelRPG.Bootstrap
             Debug.Log("[GameBootstrap] Created StubWeatherSystem.");
         }
 
-        private void SetupMonsterSpawner()
+        private void SetupCrafting()
         {
-            // Check if MonsterSpawner already exists
-            if (FindFirstObjectByType<MonsterSpawner>() != null)
+            // Check if CraftingManager already exists
+            if (FindFirstObjectByType<CraftingManager>() != null)
             {
                 return;
             }
 
-            // Create MonsterSpawner
-            var spawnerObject = new GameObject("MonsterSpawner");
-            var spawner = spawnerObject.AddComponent<MonsterSpawner>();
+            // Create CraftingManager
+            var craftingObject = new GameObject("CraftingManager");
+            var craftingManager = craftingObject.AddComponent<CraftingManager>();
 
-            // Monster types will be set via inspector since we need prefab references
-            Debug.Log("[GameBootstrap] Created MonsterSpawner.");
+            // Assign recipe registry if available
+            if (_recipeRegistry != null)
+            {
+                // Use reflection to set the private field since we're creating at runtime
+                var field = typeof(CraftingManager).GetField("_recipeRegistry",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field != null)
+                {
+                    field.SetValue(craftingManager, _recipeRegistry);
+                    _recipeRegistry.Initialize();
+                    ServiceLocator.Register<IRecipeRegistry>(_recipeRegistry);
+                    Debug.Log($"[GameBootstrap] Assigned RecipeRegistry with {_recipeRegistry.Count} recipes.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[GameBootstrap] No RecipeRegistry assigned - crafting will have no recipes!");
+            }
+
+            Debug.Log("[GameBootstrap] Created CraftingManager.");
+        }
+
+        private void SetupMonsterSpawner()
+        {
+            // Check if MonsterSpawner already exists
+            var spawner = FindFirstObjectByType<MonsterSpawner>();
+            if (spawner == null)
+            {
+                // Create MonsterSpawner
+                var spawnerObject = new GameObject("MonsterSpawner");
+                spawner = spawnerObject.AddComponent<MonsterSpawner>();
+                Debug.Log("[GameBootstrap] Created MonsterSpawner.");
+            }
+
+            // Configure monster types if we have any
+            if (_monsterTypes != null && _monsterTypes.Length > 0)
+            {
+                spawner.SetMonsterTypes(_monsterTypes);
+            }
+            else
+            {
+                Debug.LogWarning("[GameBootstrap] No monster types configured for spawner!");
+            }
+        }
+
+        /// <summary>
+        /// Called after player is created to finish spawner setup.
+        /// </summary>
+        private void ConfigureSpawnerWithPlayer()
+        {
+            var spawner = FindFirstObjectByType<MonsterSpawner>();
+            var player = GameObject.FindGameObjectWithTag("Player");
+
+            if (spawner != null && player != null)
+            {
+                spawner.SetSpawnCenter(player.transform);
+            }
         }
 
         private void SetupUI()

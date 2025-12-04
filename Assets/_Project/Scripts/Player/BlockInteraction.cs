@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using VoxelRPG.Core;
@@ -24,6 +25,10 @@ namespace VoxelRPG.Player
         [Header("References")]
         [SerializeField] private Camera _playerCamera;
 
+        [Header("Item Drops")]
+        [Tooltip("Prefab for spawning dropped items in the world")]
+        [SerializeField] private GameObject _itemDropPrefab;
+
         [Header("Debug")]
         [SerializeField] private bool _showDebugRay;
 
@@ -32,6 +37,13 @@ namespace VoxelRPG.Player
 
         private bool _breakBlockPressed;
         private bool _placeBlockPressed;
+        private bool _interactPressed;
+
+        /// <summary>
+        /// Raised when player interacts with a crafting station block.
+        /// Provides station type and block position.
+        /// </summary>
+        public event Action<string, Vector3Int> OnCraftingStationInteract;
 
         /// <summary>
         /// The currently selected block type for placing.
@@ -135,13 +147,17 @@ namespace VoxelRPG.Player
         private Vector3Int GetBlockPositionFromHit(Vector3 hitPoint, Vector3 normal, bool forPlacement)
         {
             // Offset into or out of the block based on whether we're breaking or placing
-            Vector3 offset = forPlacement ? normal * 0.5f : -normal * 0.5f;
-            Vector3 blockCenter = hitPoint + offset;
+            // Scale offset by half of BLOCK_SIZE to move into the correct block
+            float halfBlock = VoxelChunk.BLOCK_SIZE * 0.5f;
+            Vector3 offset = forPlacement ? normal * halfBlock : -normal * halfBlock;
+            Vector3 offsetPoint = hitPoint + offset;
 
+            // Convert from Unity world coordinates to block coordinates
+            // by dividing by BLOCK_SIZE
             return new Vector3Int(
-                Mathf.FloorToInt(blockCenter.x),
-                Mathf.FloorToInt(blockCenter.y),
-                Mathf.FloorToInt(blockCenter.z)
+                Mathf.FloorToInt(offsetPoint.x / VoxelChunk.BLOCK_SIZE),
+                Mathf.FloorToInt(offsetPoint.y / VoxelChunk.BLOCK_SIZE),
+                Mathf.FloorToInt(offsetPoint.z / VoxelChunk.BLOCK_SIZE)
             );
         }
 
@@ -162,6 +178,12 @@ namespace VoxelRPG.Player
             {
                 TryPlaceBlock();
                 _placeBlockPressed = false;
+            }
+
+            if (_interactPressed)
+            {
+                TryInteractWithBlock();
+                _interactPressed = false;
             }
         }
 
@@ -192,8 +214,8 @@ namespace VoxelRPG.Player
                     }
                     else
                     {
-                        Debug.Log("[BlockInteraction] Inventory full - item dropped");
-                        // TODO: Spawn world drop if inventory is full
+                        Debug.Log("[BlockInteraction] Inventory full - spawning world drop");
+                        SpawnItemDrop(currentBlock.DroppedItem, currentBlock.DropAmount, position);
                     }
                 }
             }
@@ -246,10 +268,12 @@ namespace VoxelRPG.Player
         {
             if (_characterController == null) return false;
 
-            // Get the block's bounding box (blocks are 1x1x1 cubes)
-            var blockMin = new Vector3(blockPosition.x, blockPosition.y, blockPosition.z);
-            var blockMax = blockMin + Vector3.one;
-            var blockBounds = new Bounds((blockMin + blockMax) * 0.5f, Vector3.one);
+            // Get the block's bounding box in Unity world coordinates
+            // Block positions are in block coords, multiply by BLOCK_SIZE for world coords
+            float bs = VoxelChunk.BLOCK_SIZE;
+            var blockMin = new Vector3(blockPosition.x * bs, blockPosition.y * bs, blockPosition.z * bs);
+            var blockMax = blockMin + Vector3.one * bs;
+            var blockBounds = new Bounds((blockMin + blockMax) * 0.5f, Vector3.one * bs);
 
             // Get player's bounding box from CharacterController
             var playerCenter = _characterController.transform.position + _characterController.center;
@@ -293,6 +317,38 @@ namespace VoxelRPG.Player
         }
 
         /// <summary>
+        /// Called by Input System for interact action (use crafting station, etc.).
+        /// </summary>
+        public void OnInteract(InputAction.CallbackContext context)
+        {
+            if (context.started)
+            {
+                _interactPressed = true;
+                Debug.Log($"[BlockInteraction] Interact pressed. HasTarget={HasTarget}, TargetPos={TargetBlockPosition}");
+            }
+        }
+
+        /// <summary>
+        /// Attempts to interact with the targeted block (e.g., open furnace).
+        /// </summary>
+        private void TryInteractWithBlock()
+        {
+            if (!TargetBlockPosition.HasValue) return;
+
+            var position = TargetBlockPosition.Value;
+            var block = _voxelWorld.GetBlock(position);
+
+            if (block == null || block == BlockType.Air) return;
+
+            // Check if block is a crafting station
+            if (block.IsCraftingStation && !string.IsNullOrEmpty(block.StationType))
+            {
+                Debug.Log($"[BlockInteraction] Interacting with {block.DisplayName} (station: {block.StationType})");
+                OnCraftingStationInteract?.Invoke(block.StationType, position);
+            }
+        }
+
+        /// <summary>
         /// Sets the selected block type by ID.
         /// </summary>
         /// <param name="blockId">Block ID from registry.</param>
@@ -302,6 +358,46 @@ namespace VoxelRPG.Player
             {
                 SelectedBlockType = _blockRegistry.GetOrAir(blockId);
             }
+        }
+
+        /// <summary>
+        /// Spawns an item drop in the world at the specified block position.
+        /// </summary>
+        /// <param name="item">The item to drop.</param>
+        /// <param name="amount">Amount of items.</param>
+        /// <param name="blockPosition">Block position to spawn at.</param>
+        private void SpawnItemDrop(ItemDefinition item, int amount, Vector3Int blockPosition)
+        {
+            if (item == null || amount <= 0) return;
+
+            // Calculate world position (center of block, slightly above)
+            Vector3 worldPos = new Vector3(
+                (blockPosition.x + 0.5f) * VoxelChunk.BLOCK_SIZE,
+                (blockPosition.y + 0.5f) * VoxelChunk.BLOCK_SIZE + 0.25f,
+                (blockPosition.z + 0.5f) * VoxelChunk.BLOCK_SIZE
+            );
+
+            // Use item's drop prefab if available, otherwise use generic prefab
+            GameObject prefabToSpawn = item.DropPrefab != null ? item.DropPrefab : _itemDropPrefab;
+
+            if (prefabToSpawn == null)
+            {
+                Debug.LogWarning($"[BlockInteraction] Cannot spawn drop for {item.DisplayName} - no drop prefab configured");
+                return;
+            }
+
+            // Spawn the drop
+            GameObject dropObj = Instantiate(prefabToSpawn, worldPos, Quaternion.identity);
+
+            // Initialize the ItemDrop component
+            ItemDrop itemDrop = dropObj.GetComponent<ItemDrop>();
+            if (itemDrop == null)
+            {
+                itemDrop = dropObj.AddComponent<ItemDrop>();
+            }
+
+            itemDrop.Initialize(new ItemStack(item, amount));
+            Debug.Log($"[BlockInteraction] Spawned world drop: {amount}x {item.DisplayName} at {worldPos}");
         }
     }
 }

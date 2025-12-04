@@ -27,6 +27,9 @@ namespace VoxelRPG.Core.Items
         [Tooltip("Prefab for world drop representation")]
         [SerializeField] private GameObject _dropPrefab;
 
+        [Tooltip("Prefab used when item is equipped (weapons/tools). Falls back to DropPrefab if not set.")]
+        [SerializeField] private GameObject _equippedPrefab;
+
         [Header("Stacking")]
         [Tooltip("Maximum stack size (1 = non-stackable)")]
         [SerializeField] private int _maxStackSize = 64;
@@ -75,6 +78,11 @@ namespace VoxelRPG.Core.Items
         /// Prefab for world drop representation.
         /// </summary>
         public GameObject DropPrefab => _dropPrefab;
+
+        /// <summary>
+        /// Prefab used when item is equipped. Falls back to DropPrefab if not set.
+        /// </summary>
+        public GameObject EquippedPrefab => _equippedPrefab != null ? _equippedPrefab : _dropPrefab;
 
         /// <summary>
         /// Maximum stack size (1 = non-stackable).

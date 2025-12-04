@@ -3,7 +3,9 @@
     "rootNamespace": "VoxelRPG.Editor",
     "references": [
         "VoxelRPG.Voxel",
-        "VoxelRPG.Core"
+        "VoxelRPG.Core",
+        "VoxelRPG.Combat",
+        "VoxelRPG.Player"
     ],
     "includePlatforms": [
         "Editor"

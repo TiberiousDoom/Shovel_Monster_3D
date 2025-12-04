@@ -272,15 +272,14 @@ namespace VoxelRPG.UI
             listRect.anchorMin = new Vector2(0, 0);
             listRect.anchorMax = new Vector2(0.5f, 1);
             listRect.offsetMin = new Vector2(10, 50);
-            listRect.offsetMax = new Vector2(-10, -50);
-            var listImage = listContainer.AddComponent<Image>();
-            listImage.color = new Color(0.15f, 0.15f, 0.15f, 1f);
+            listRect.offsetMax = new Vector2(-10, -10);
+            listContainer.AddComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
             // Recipe list with scroll rect
             var scrollRectObj = new GameObject("RecipeListScroll");
             scrollRectObj.transform.SetParent(listContainer.transform, false);
             var scrollRect = scrollRectObj.AddComponent<ScrollRect>();
-            var scrollRectRect = scrollRectObj.AddComponent<RectTransform>();
+            var scrollRectRect = scrollRectObj.GetComponent<RectTransform>();
             scrollRectRect.anchorMin = Vector2.zero;
             scrollRectRect.anchorMax = Vector2.one;
             scrollRectRect.offsetMin = Vector2.zero;
@@ -327,9 +326,8 @@ namespace VoxelRPG.UI
             detailsRect.anchorMin = new Vector2(0.5f, 0);
             detailsRect.anchorMax = new Vector2(1, 1);
             detailsRect.offsetMin = new Vector2(10, 50);
-            detailsRect.offsetMax = new Vector2(-10, -50);
-            var detailsImage = detailsPanel.AddComponent<Image>();
-            detailsImage.color = new Color(0.15f, 0.15f, 0.15f, 1f);
+            detailsRect.offsetMax = new Vector2(-10, -10);
+            detailsPanel.AddComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
             // Recipe name
             var recipeName = CreateText(detailsPanel.transform, "RecipeName", "Select a recipe",

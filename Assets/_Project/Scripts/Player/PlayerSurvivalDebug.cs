@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using VoxelRPG.Core;
 using VoxelRPG.Voxel;
 
@@ -25,11 +26,11 @@ namespace VoxelRPG.Player
         [SerializeField] private float _maxFallDamage = 100f;
 
         [Header("Key Bindings")]
-        [SerializeField] private KeyCode _damageKey = KeyCode.F1;
-        [SerializeField] private KeyCode _healKey = KeyCode.F2;
-        [SerializeField] private KeyCode _feedKey = KeyCode.F3;
-        [SerializeField] private KeyCode _logStatsKey = KeyCode.F4;
-        [SerializeField] private KeyCode _unstuckKey = KeyCode.F5;
+        [SerializeField] private Key _damageKey = Key.F1;
+        [SerializeField] private Key _healKey = Key.F2;
+        [SerializeField] private Key _feedKey = Key.F3;
+        [SerializeField] private Key _logStatsKey = Key.F4;
+        [SerializeField] private Key _unstuckKey = Key.F5;
 
         [Header("Unstuck Settings")]
         [Tooltip("Height above current position to teleport when unstuck")]
@@ -131,7 +132,10 @@ namespace VoxelRPG.Player
 
         private void HandleDebugInput()
         {
-            if (Input.GetKeyDown(_damageKey))
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return;
+
+            if (keyboard[_damageKey].wasPressedThisFrame)
             {
                 if (_healthSystem != null)
                 {
@@ -140,7 +144,7 @@ namespace VoxelRPG.Player
                 }
             }
 
-            if (Input.GetKeyDown(_healKey))
+            if (keyboard[_healKey].wasPressedThisFrame)
             {
                 if (_healthSystem != null)
                 {
@@ -149,7 +153,7 @@ namespace VoxelRPG.Player
                 }
             }
 
-            if (Input.GetKeyDown(_feedKey))
+            if (keyboard[_feedKey].wasPressedThisFrame)
             {
                 if (_hungerSystem != null)
                 {
@@ -158,12 +162,12 @@ namespace VoxelRPG.Player
                 }
             }
 
-            if (Input.GetKeyDown(_logStatsKey))
+            if (keyboard[_logStatsKey].wasPressedThisFrame)
             {
                 LogCurrentStats();
             }
 
-            if (Input.GetKeyDown(_unstuckKey))
+            if (keyboard[_unstuckKey].wasPressedThisFrame)
             {
                 TryUnstuck();
             }

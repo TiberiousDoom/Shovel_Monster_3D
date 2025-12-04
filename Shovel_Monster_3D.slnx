@@ -1,0 +1,14 @@
+﻿<Solution>
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="VoxelRPG.Core.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="VoxelRPG.Voxel.csproj" />
+  <Project Path="VoxelRPG.Combat.csproj" />
+  <Project Path="VoxelRPG.Player.csproj" />
+  <Project Path="VoxelRPG.UI.csproj" />
+  <Project Path="VoxelRPG.Bootstrap.csproj" />
+  <Project Path="VoxelRPG.Building.csproj" />
+  <Project Path="VoxelRPG.Editor.csproj" />
+  <Project Path="VoxelRPG.World.csproj" />
+  <Project Path="VoxelRPG.Utilities.csproj" />
+</Solution>

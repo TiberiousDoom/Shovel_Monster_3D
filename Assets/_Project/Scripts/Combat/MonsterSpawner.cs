@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AI;
 using VoxelRPG.Core;
 
 namespace VoxelRPG.Combat
@@ -25,18 +24,21 @@ namespace VoxelRPG.Combat
         [SerializeField] private int _spawnsPerEvent = 1;
 
         [Header("Spawn Distance")]
-        [Tooltip("Minimum distance from player to spawn")]
-        [SerializeField] private float _minSpawnDistance = 20f;
+        [Tooltip("Minimum distance from player to spawn (in Unity units)")]
+        [SerializeField] private float _minSpawnDistance = 5f;
 
-        [Tooltip("Maximum distance from player to spawn")]
-        [SerializeField] private float _maxSpawnDistance = 40f;
+        [Tooltip("Maximum distance from player to spawn (in Unity units)")]
+        [SerializeField] private float _maxSpawnDistance = 12f;
 
         [Tooltip("Height above ground to spawn")]
-        [SerializeField] private float _spawnHeight = 1f;
+        [SerializeField] private float _spawnHeight = 0.5f;
+
+        [Tooltip("Layer mask for ground detection")]
+        [SerializeField] private LayerMask _groundLayer = -1;
 
         [Header("Despawn Settings")]
         [Tooltip("Distance from player before despawning")]
-        [SerializeField] private float _despawnDistance = 60f;
+        [SerializeField] private float _despawnDistance = 20f;
 
         [Tooltip("Whether to despawn monsters at dawn")]
         [SerializeField] private bool _despawnAtDawn = true;
@@ -120,13 +122,26 @@ namespace VoxelRPG.Combat
             DespawnDistantMonsters();
 
             // Spawn check
-            if (CanSpawn && _spawnCenter != null)
+            if (_spawnCenter != null)
             {
-                _spawnTimer -= Time.deltaTime;
-                if (_spawnTimer <= 0)
+                if (CanSpawn)
                 {
-                    _spawnTimer = _spawnInterval;
-                    TrySpawnMonsters();
+                    _spawnTimer -= Time.deltaTime;
+                    if (_spawnTimer <= 0)
+                    {
+                        _spawnTimer = _spawnInterval;
+                        TrySpawnMonsters();
+                    }
+                }
+            }
+            else
+            {
+                // Try to find player if spawn center not set
+                var player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null)
+                {
+                    _spawnCenter = player.transform;
+                    Debug.Log($"[MonsterSpawner] Found player, setting as spawn center");
                 }
             }
         }
@@ -212,7 +227,11 @@ namespace VoxelRPG.Combat
                 }
             }
 
-            if (totalWeight <= 0) return _monsterTypes[0];
+            if (totalWeight <= 0)
+            {
+                Debug.Log($"[MonsterSpawner] Selected: {_monsterTypes[0]?.DisplayName} (only option, zero total weight)");
+                return _monsterTypes[0];
+            }
 
             float random = Random.Range(0f, totalWeight);
             float cumulative = 0f;
@@ -223,10 +242,12 @@ namespace VoxelRPG.Combat
                 cumulative += def.SpawnWeight;
                 if (random <= cumulative)
                 {
+                    Debug.Log($"[MonsterSpawner] Selected: {def.DisplayName} (roll: {random:F2}/{totalWeight:F2}, weight: {def.SpawnWeight})");
                     return def;
                 }
             }
 
+            Debug.Log($"[MonsterSpawner] Selected: {_monsterTypes[0]?.DisplayName} (fallback)");
             return _monsterTypes[0];
         }
 
@@ -238,7 +259,9 @@ namespace VoxelRPG.Combat
             {
                 // Random angle around player
                 float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                float distance = Random.Range(_minSpawnDistance, _maxSpawnDistance);
+                // Try progressively closer distances if failing
+                float distanceScale = 1f - (attempt * 0.08f); // Reduce distance each attempt
+                float distance = Random.Range(_minSpawnDistance, _maxSpawnDistance) * distanceScale;
 
                 Vector3 offset = new Vector3(
                     Mathf.Cos(angle) * distance,
@@ -249,22 +272,31 @@ namespace VoxelRPG.Combat
                 Vector3 testPos = _spawnCenter.position + offset;
 
                 // Try to find valid NavMesh position
-                if (NavMesh.SamplePosition(testPos, out NavMeshHit hit, 10f, NavMesh.AllAreas))
+                if (UnityEngine.AI.NavMesh.SamplePosition(testPos, out UnityEngine.AI.NavMeshHit hit, 10f, UnityEngine.AI.NavMesh.AllAreas))
                 {
                     position = hit.position + Vector3.up * _spawnHeight;
                     return true;
                 }
 
                 // Fallback: raycast to find ground
-                testPos.y = _spawnCenter.position.y + 50f;
-                if (Physics.Raycast(testPos, Vector3.down, out RaycastHit groundHit, 100f))
+                testPos.y = _spawnCenter.position.y + 20f;
+                if (Physics.Raycast(testPos, Vector3.down, out RaycastHit groundHit, 50f))
                 {
                     position = groundHit.point + Vector3.up * _spawnHeight;
                     return true;
                 }
             }
 
-            return false;
+            // Final fallback: spawn at player's Y level nearby
+            float fallbackAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float fallbackDist = _minSpawnDistance;
+            position = _spawnCenter.position + new Vector3(
+                Mathf.Cos(fallbackAngle) * fallbackDist,
+                _spawnHeight,
+                Mathf.Sin(fallbackAngle) * fallbackDist
+            );
+            Debug.Log($"[MonsterSpawner] Using fallback spawn position: {position}");
+            return true;
         }
 
         /// <summary>
@@ -313,9 +345,17 @@ namespace VoxelRPG.Combat
 
                 Vector3 spawnPos = centerPosition + offset;
 
-                if (NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, groupSpread, NavMesh.AllAreas))
+                // Raycast to find ground
+                Vector3 rayStart = spawnPos + Vector3.up * 10f;
+                if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 20f, _groundLayer))
                 {
-                    SpawnMonster(definition, hit.position + Vector3.up * _spawnHeight);
+                    SpawnMonster(definition, hit.point + Vector3.up * _spawnHeight);
+                }
+                else
+                {
+                    // Fallback to center position height
+                    spawnPos.y = centerPosition.y;
+                    SpawnMonster(definition, spawnPos + Vector3.up * _spawnHeight);
                 }
             }
         }
@@ -377,6 +417,25 @@ namespace VoxelRPG.Combat
         public void SetSpawnCenter(Transform center)
         {
             _spawnCenter = center;
+            Debug.Log($"[MonsterSpawner] Spawn center set to: {center?.name ?? "null"}");
+        }
+
+        /// <summary>
+        /// Sets the monster types that can spawn.
+        /// </summary>
+        public void SetMonsterTypes(MonsterDefinition[] monsterTypes)
+        {
+            _monsterTypes = monsterTypes;
+            Debug.Log($"[MonsterSpawner] Monster types set: {monsterTypes?.Length ?? 0} types");
+        }
+
+        /// <summary>
+        /// Enables or disables force spawning (ignores day/night).
+        /// </summary>
+        public void SetForceSpawning(bool force)
+        {
+            _forceSpawning = force;
+            Debug.Log($"[MonsterSpawner] Force spawning: {force}");
         }
 
 #if UNITY_EDITOR
