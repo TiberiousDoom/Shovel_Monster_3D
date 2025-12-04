@@ -293,10 +293,8 @@ namespace VoxelRPG.UI
             viewportRect.anchorMax = Vector2.one;
             viewportRect.offsetMin = Vector2.zero;
             viewportRect.offsetMax = Vector2.zero;
-            var viewportImage = viewport.AddComponent<Image>();
-            viewportImage.color = Color.clear;
-            var mask = viewport.AddComponent<Mask>();
-            mask.showMaskGraphic = false;
+            // Use RectMask2D instead of Mask - it's better for scroll views and doesn't require a graphic
+            viewport.AddComponent<RectMask2D>();
 
             // Content area for recipes
             var content = new GameObject("Content");
