@@ -1,9 +1,9 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 using VoxelRPG.Core;
 using VoxelRPG.Core.Items;
-using VoxelRPG.UI;
 using VoxelRPG.Voxel;
 
 namespace VoxelRPG.Player
@@ -169,8 +169,8 @@ namespace VoxelRPG.Player
                 return;
             }
 
-            // Don't process interactions when UI is open
-            if (ServiceLocator.TryGet<UIManager>(out var uiManager) && !uiManager.IsGameplayInputEnabled)
+            // Don't process interactions when pointer is over UI
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             {
                 // Clear any queued inputs
                 _breakBlockPressed = false;
