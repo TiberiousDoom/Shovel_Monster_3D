@@ -67,6 +67,8 @@ namespace VoxelRPG.UI
         private InputAction _dynamicInventoryAction;
         private InputAction _dynamicCraftingAction;
 
+        private bool _inputActionsInitialized = false;
+
         private void Start()
         {
             // Initialize to gameplay state
@@ -76,12 +78,35 @@ namespace VoxelRPG.UI
             SetupInputActions();
         }
 
+        private void Update()
+        {
+            // Retry finding input actions if not initialized (player may be created after UI)
+            if (!_inputActionsInitialized)
+            {
+                SetupInputActions();
+            }
+        }
+
         private void SetupInputActions()
         {
+            // Already initialized - don't re-subscribe
+            if (_inputActionsInitialized) return;
+
             // Try to find input actions from player if references aren't set
             if (_pauseAction == null || _inventoryAction == null || _craftingAction == null)
             {
                 TryFindInputActionsFromPlayer();
+            }
+
+            // Check if we have at least one action source
+            bool hasPauseAction = _pauseAction != null || _dynamicPauseAction != null;
+            bool hasInventoryAction = _inventoryAction != null || _dynamicInventoryAction != null;
+            bool hasCraftingAction = _craftingAction != null || _dynamicCraftingAction != null;
+
+            // If no actions found yet, wait for player to be created
+            if (!hasPauseAction && !hasInventoryAction && !hasCraftingAction)
+            {
+                return;
             }
 
             // Subscribe to pause action
@@ -119,6 +144,9 @@ namespace VoxelRPG.UI
                 _dynamicCraftingAction.performed += OnCraftingInput;
                 _dynamicCraftingAction.Enable();
             }
+
+            _inputActionsInitialized = true;
+            Debug.Log("[UIManager] Input actions initialized.");
         }
 
         private void TryFindInputActionsFromPlayer()
@@ -126,7 +154,7 @@ namespace VoxelRPG.UI
             var playerInput = FindFirstObjectByType<PlayerInput>();
             if (playerInput == null || playerInput.actions == null)
             {
-                Debug.LogWarning("[UIManager] No PlayerInput found - UI input won't work.");
+                // Don't warn - player may not be created yet, we'll retry in Update
                 return;
             }
 

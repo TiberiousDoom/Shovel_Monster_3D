@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0991fabc43fcc814fa5ff83fa5b32f0b, type: 3}
+  m_Name: ItemRegistry
+  m_EditorClassIdentifier: VoxelRPG.Core::VoxelRPG.Core.Items.ItemRegistry
+  _items:
+  - {fileID: 11400000, guid: a1b2c3d4e5f6789012345678abcdef01, type: 2}
+  - {fileID: 11400000, guid: a1b2c3d4e5f6789012345678abcdef02, type: 2}
+  - {fileID: 11400000, guid: a1b2c3d4e5f6789012345678abcdef04, type: 2}
+  - {fileID: 11400000, guid: a1b2c3d4e5f6789012345678abcdef05, type: 2}
+  - {fileID: 11400000, guid: d11358c11e105fd49b8b83513e101788, type: 2}
+  - {fileID: 11400000, guid: a1b2c3d4e5f6789012345678abcdef07, type: 2}
+  - {fileID: 11400000, guid: d0fd727c542e2c344b64c9b129589f0e, type: 2}
+  - {fileID: 11400000, guid: a1b2c3d4e5f6789012345678abcdef03, type: 2}
+  - {fileID: 11400000, guid: 0d002ea06ef423f42b8afe401be5b35f, type: 2}
+  - {fileID: 11400000, guid: bdb7c3bfff2638842bd903026984aefd, type: 2}
+  - {fileID: 11400000, guid: 9c0d04024a7b5604882de04448b41c30, type: 2}
+  - {fileID: 11400000, guid: 8926644d7b990f3468090eb28a3b8779, type: 2}
+  - {fileID: 11400000, guid: b2c3d4e5f67890abcd1234567890ab12, type: 2}
+  - {fileID: 11400000, guid: cfc236c301141904b866484a564afe4c, type: 2}
+  - {fileID: 11400000, guid: ade53ab7fab5f72478d2e4f58845aab9, type: 2}
+  - {fileID: 11400000, guid: 7f33a8e7a60c20042839df04bf7aaa46, type: 2}
+  - {fileID: 11400000, guid: bb455567ea0abff43b2bf7e82ad4032c, type: 2}

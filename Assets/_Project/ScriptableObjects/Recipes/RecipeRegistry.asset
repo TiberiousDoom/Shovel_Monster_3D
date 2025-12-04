@@ -11,7 +11,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2e1962e431bdc7f4398bcbdbf1f8cd8e, type: 3}
   m_Name: RecipeRegistry
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: VoxelRPG.Core::VoxelRPG.Core.Crafting.RecipeRegistry
   _recipes:
-  - {fileID: 11400000, guid: r1b2c3d4e5f6789012345678abcdef01, type: 2}
-  - {fileID: 11400000, guid: r1b2c3d4e5f6789012345678abcdef02, type: 2}
+  - {fileID: 11400000, guid: 115790b4eb30bbf4c87214e093ad4376, type: 2}
+  - {fileID: 11400000, guid: 46c8c4f5d1b4e3942a091963ff5eab8f, type: 2}
+  - {fileID: 11400000, guid: 6f523ca87998bbc40b4b2ce3ed05e454, type: 2}
+  - {fileID: 11400000, guid: 8bd90dbfea21b7b4e905ac9563e8d37d, type: 2}
+  - {fileID: 11400000, guid: d2af0a52e25fc1841ae378f9850c6744, type: 2}
+  - {fileID: 11400000, guid: 5b85d4646cd158246883dedfdb1ba55c, type: 2}
+  - {fileID: 11400000, guid: 01fb995c44a5b784ca2ca229039feb09, type: 2}
+  - {fileID: 11400000, guid: c302b4884fff9d1418225ae331f5438b, type: 2}
+  - {fileID: 11400000, guid: 286b7873dd9b6c74d8368c4507546d69, type: 2}

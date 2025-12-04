@@ -37,4 +37,4 @@ MonoBehaviour:
   _hurtSound: {fileID: 0}
   _deathSound: {fileID: 0}
   _ambientSounds: []
-  _prefab: {fileID: 2360787733059810525, guid: 27951c28ba5c1324b9c455bfe7888720, type: 3}
+  _prefab: {fileID: 8416630084465821477, guid: 7f2ab37f2434950458059bc6967c2fab, type: 3}

@@ -497,14 +497,9 @@ namespace VoxelRPG.Editor
             characterController.radius = 0.5f;
             characterController.center = new Vector3(0, 1f, 0);
 
-            // Add NavMeshAgent for AI pathfinding
-            var navAgent = zombieGO.AddComponent<UnityEngine.AI.NavMeshAgent>();
-            navAgent.speed = 4f; // Chase speed from Zombie.asset
-            navAgent.angularSpeed = 120f;
-            navAgent.acceleration = 8f;
-            navAgent.stoppingDistance = 1.5f;
-            navAgent.radius = 0.5f;
-            navAgent.height = 2f;
+            // NOTE: We do NOT add NavMeshAgent - BasicMonsterAI uses CharacterController-based
+            // movement with ground detection, which works better for procedural voxel worlds
+            // where NavMesh can't be pre-baked.
 
             // Add BasicMonsterAI component
             zombieGO.AddComponent<BasicMonsterAI>();
