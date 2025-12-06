@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using VoxelRPG.Core.Events;
+using VoxelRPG.Player.Skills;
 
 namespace VoxelRPG.Player
 {
@@ -117,8 +118,11 @@ namespace VoxelRPG.Player
         {
             if (_hungerDecayRate <= 0) return;
 
+            // Apply endurance skill reduction to hunger decay
+            float effectiveDecayRate = SkillModifiers.CalculateHungerDecay(_hungerDecayRate);
+
             float previousHunger = _currentHunger;
-            _currentHunger -= _hungerDecayRate * Time.deltaTime;
+            _currentHunger -= effectiveDecayRate * Time.deltaTime;
             _currentHunger = Mathf.Max(0, _currentHunger);
 
             if (!Mathf.Approximately(previousHunger, _currentHunger))

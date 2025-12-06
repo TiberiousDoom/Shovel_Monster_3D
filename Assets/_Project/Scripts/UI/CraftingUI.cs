@@ -47,6 +47,7 @@ namespace VoxelRPG.UI
         private PlayerInventory _playerInventory;
         private List<RecipeSlotUI> _recipeSlots = new List<RecipeSlotUI>();
         private Recipe _selectedRecipe;
+        private RecipeSlotUI _selectedSlot;
         private List<CraftingIngredientUI> _ingredientSlots = new List<CraftingIngredientUI>();
         private string _currentStationType;
 
@@ -275,7 +276,32 @@ namespace VoxelRPG.UI
         public void SelectRecipe(Recipe recipe)
         {
             _selectedRecipe = recipe;
+
+            // Update selection visuals
+            UpdateSelectionVisuals(recipe);
+
             RefreshDetails();
+        }
+
+        private void UpdateSelectionVisuals(Recipe selectedRecipe)
+        {
+            // Deselect previous slot
+            if (_selectedSlot != null)
+            {
+                _selectedSlot.SetSelected(false);
+            }
+
+            // Find and select the new slot
+            _selectedSlot = null;
+            foreach (var slot in _recipeSlots)
+            {
+                if (slot != null && slot.Recipe == selectedRecipe)
+                {
+                    slot.SetSelected(true);
+                    _selectedSlot = slot;
+                    break;
+                }
+            }
         }
 
         private void RefreshDetails()
@@ -416,6 +442,13 @@ namespace VoxelRPG.UI
         private void ClearSelection()
         {
             _selectedRecipe = null;
+
+            // Deselect any selected slot
+            if (_selectedSlot != null)
+            {
+                _selectedSlot.SetSelected(false);
+                _selectedSlot = null;
+            }
 
             if (_detailsPanel != null)
             {
