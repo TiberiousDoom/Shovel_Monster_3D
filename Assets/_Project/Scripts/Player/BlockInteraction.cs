@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using VoxelRPG.Core;
 using VoxelRPG.Core.Items;
+using VoxelRPG.Player.Skills;
 using VoxelRPG.Voxel;
 
 namespace VoxelRPG.Player
@@ -29,6 +30,10 @@ namespace VoxelRPG.Player
         [Tooltip("Prefab for spawning dropped items in the world")]
         [SerializeField] private GameObject _itemDropPrefab;
 
+        [Header("Mining Settings")]
+        [Tooltip("Base mining speed (blocks with hardness 1.0 break in 1/baseSpeed seconds)")]
+        [SerializeField] private float _baseMiningSpeed = 2f;
+
         [Header("Debug")]
         [SerializeField] private bool _showDebugRay;
 
@@ -36,14 +41,26 @@ namespace VoxelRPG.Player
         private BlockRegistry _blockRegistry;
 
         private bool _breakBlockPressed;
+        private bool _breakBlockHeld;
         private bool _placeBlockPressed;
         private bool _interactPressed;
+
+        // Mining progress tracking
+        private Vector3Int? _miningBlockPosition;
+        private float _miningProgress;
+        private BlockType _miningBlockType;
 
         /// <summary>
         /// Raised when player interacts with a crafting station block.
         /// Provides station type and block position.
         /// </summary>
         public event Action<string, Vector3Int> OnCraftingStationInteract;
+
+        /// <summary>
+        /// Raised when mining progress changes.
+        /// Parameters: block position, normalized progress (0-1).
+        /// </summary>
+        public event Action<Vector3Int, float> OnMiningProgressChanged;
 
         /// <summary>
         /// The currently selected block type for placing.
@@ -64,6 +81,16 @@ namespace VoxelRPG.Player
         /// Whether the player is currently looking at a block.
         /// </summary>
         public bool HasTarget => TargetBlockPosition.HasValue;
+
+        /// <summary>
+        /// Current mining progress (0-1).
+        /// </summary>
+        public float MiningProgress => _miningProgress;
+
+        /// <summary>
+        /// Whether the player is currently mining a block.
+        /// </summary>
+        public bool IsMining => _miningBlockPosition.HasValue && _breakBlockHeld;
 
         private void Start()
         {
@@ -104,6 +131,7 @@ namespace VoxelRPG.Player
         {
             UpdateTargetBlock();
             HandleInteraction();
+            UpdateMiningProgress();
         }
 
         private void UpdateTargetBlock()
@@ -177,15 +205,17 @@ namespace VoxelRPG.Player
                     Debug.Log($"[BlockInteraction] Blocking input - cursor unlocked. LockState={Cursor.lockState}");
                 }
                 _breakBlockPressed = false;
+                _breakBlockHeld = false;
                 _placeBlockPressed = false;
                 _interactPressed = false;
+                ResetMiningProgress();
                 return;
             }
 
             if (_breakBlockPressed)
             {
                 Debug.Log($"[BlockInteraction] Processing break - cursor IS locked. LockState={Cursor.lockState}");
-                TryBreakBlock();
+                StartMining();
                 _breakBlockPressed = false;
             }
 
@@ -202,37 +232,90 @@ namespace VoxelRPG.Player
             }
         }
 
-        private void TryBreakBlock()
+        private void UpdateMiningProgress()
         {
-            if (!TargetBlockPosition.HasValue)
+            // Stop mining if not holding button or no target
+            if (!_breakBlockHeld || !TargetBlockPosition.HasValue)
             {
+                if (_miningBlockPosition.HasValue)
+                {
+                    ResetMiningProgress();
+                }
                 return;
             }
+
+            // Check if target block changed
+            if (_miningBlockPosition != TargetBlockPosition)
+            {
+                StartMining();
+                return;
+            }
+
+            // Continue mining current block
+            if (_miningBlockType == null) return;
+
+            // Calculate effective mining speed with skill bonus
+            float effectiveSpeed = SkillModifiers.CalculateMiningSpeed(_baseMiningSpeed);
+            float miningRate = effectiveSpeed / _miningBlockType.Hardness;
+
+            _miningProgress += miningRate * Time.deltaTime;
+
+            // Notify listeners of progress
+            OnMiningProgressChanged?.Invoke(_miningBlockPosition.Value, _miningProgress);
+
+            // Check if block is fully mined
+            if (_miningProgress >= 1f)
+            {
+                CompleteBlockBreak();
+            }
+        }
+
+        private void StartMining()
+        {
+            if (!TargetBlockPosition.HasValue) return;
 
             var position = TargetBlockPosition.Value;
             var currentBlock = _voxelWorld.GetBlock(position);
 
-            // Don't break air
-            if (currentBlock == null || currentBlock == BlockType.Air)
-            {
-                return;
-            }
+            // Don't mine air
+            if (currentBlock == null || currentBlock == BlockType.Air) return;
+
+            _miningBlockPosition = position;
+            _miningBlockType = currentBlock;
+            _miningProgress = 0f;
+
+            Debug.Log($"[BlockInteraction] Started mining {currentBlock.DisplayName} at {position} (hardness: {currentBlock.Hardness})");
+        }
+
+        private void CompleteBlockBreak()
+        {
+            if (!_miningBlockPosition.HasValue || _miningBlockType == null) return;
+
+            var position = _miningBlockPosition.Value;
+            var block = _miningBlockType;
 
             // Add dropped item to inventory
-            if (currentBlock.DroppedItem != null && currentBlock.DropAmount > 0)
+            if (block.DroppedItem != null && block.DropAmount > 0)
             {
                 if (ServiceLocator.TryGet<PlayerInventory>(out var inventory))
                 {
-                    if (inventory.TryAddItem(currentBlock.DroppedItem, currentBlock.DropAmount))
+                    if (inventory.TryAddItem(block.DroppedItem, block.DropAmount))
                     {
-                        Debug.Log($"[BlockInteraction] Added {currentBlock.DropAmount}x {currentBlock.DroppedItem.DisplayName} to inventory");
+                        Debug.Log($"[BlockInteraction] Added {block.DropAmount}x {block.DroppedItem.DisplayName} to inventory");
                     }
                     else
                     {
                         Debug.Log("[BlockInteraction] Inventory full - spawning world drop");
-                        SpawnItemDrop(currentBlock.DroppedItem, currentBlock.DropAmount, position);
+                        SpawnItemDrop(block.DroppedItem, block.DropAmount, position);
                     }
                 }
+            }
+
+            // Award mining XP based on block hardness
+            if (ServiceLocator.TryGet<SkillSystem>(out var skillSystem))
+            {
+                int xp = Mathf.RoundToInt(1 + block.Hardness * 2);
+                skillSystem.AddExperience(xp);
             }
 
             _voxelWorld.RequestBlockChange(position, BlockType.Air);
@@ -242,6 +325,20 @@ namespace VoxelRPG.Player
             {
                 world.RebuildDirtyChunks();
             }
+
+            ResetMiningProgress();
+            Debug.Log($"[BlockInteraction] Completed mining {block.DisplayName}");
+        }
+
+        private void ResetMiningProgress()
+        {
+            if (_miningBlockPosition.HasValue)
+            {
+                OnMiningProgressChanged?.Invoke(_miningBlockPosition.Value, 0f);
+            }
+            _miningBlockPosition = null;
+            _miningBlockType = null;
+            _miningProgress = 0f;
         }
 
         private void TryPlaceBlock()
@@ -314,7 +411,13 @@ namespace VoxelRPG.Player
             if (context.started)
             {
                 _breakBlockPressed = true;
+                _breakBlockHeld = true;
                 Debug.Log($"[BlockInteraction] Break block pressed. HasTarget={HasTarget}, TargetPos={TargetBlockPosition}");
+            }
+            else if (context.canceled)
+            {
+                _breakBlockHeld = false;
+                Debug.Log($"[BlockInteraction] Break block released.");
             }
         }
 

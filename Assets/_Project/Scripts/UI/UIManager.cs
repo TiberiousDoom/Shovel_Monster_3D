@@ -17,12 +17,14 @@ namespace VoxelRPG.UI
         [SerializeField] private GameObject _pauseScreen;
         [SerializeField] private GameObject _inventoryScreen;
         [SerializeField] private GameObject _craftingScreen;
+        [SerializeField] private GameObject _characterScreen;
         [SerializeField] private GameObject _deathScreen;
 
         [Header("Input")]
         [SerializeField] private InputActionReference _pauseAction;
         [SerializeField] private InputActionReference _inventoryAction;
         [SerializeField] private InputActionReference _craftingAction;
+        [SerializeField] private InputActionReference _characterAction;
 
         [Header("Settings")]
         [Tooltip("Whether to pause the game when pause menu is open")]
@@ -66,6 +68,7 @@ namespace VoxelRPG.UI
         private InputAction _dynamicPauseAction;
         private InputAction _dynamicInventoryAction;
         private InputAction _dynamicCraftingAction;
+        private InputAction _dynamicCharacterAction;
 
         private bool _inputActionsInitialized = false;
 
@@ -93,7 +96,7 @@ namespace VoxelRPG.UI
             if (_inputActionsInitialized) return;
 
             // Try to find input actions from player if references aren't set
-            if (_pauseAction == null || _inventoryAction == null || _craftingAction == null)
+            if (_pauseAction == null || _inventoryAction == null || _craftingAction == null || _characterAction == null)
             {
                 TryFindInputActionsFromPlayer();
             }
@@ -102,9 +105,10 @@ namespace VoxelRPG.UI
             bool hasPauseAction = _pauseAction != null || _dynamicPauseAction != null;
             bool hasInventoryAction = _inventoryAction != null || _dynamicInventoryAction != null;
             bool hasCraftingAction = _craftingAction != null || _dynamicCraftingAction != null;
+            bool hasCharacterAction = _characterAction != null || _dynamicCharacterAction != null;
 
             // If no actions found yet, wait for player to be created
-            if (!hasPauseAction && !hasInventoryAction && !hasCraftingAction)
+            if (!hasPauseAction && !hasInventoryAction && !hasCraftingAction && !hasCharacterAction)
             {
                 return;
             }
@@ -143,6 +147,18 @@ namespace VoxelRPG.UI
             {
                 _dynamicCraftingAction.performed += OnCraftingInput;
                 _dynamicCraftingAction.Enable();
+            }
+
+            // Subscribe to character action
+            if (_characterAction != null)
+            {
+                _characterAction.action.performed += OnCharacterInput;
+                _characterAction.action.Enable();
+            }
+            else if (_dynamicCharacterAction != null)
+            {
+                _dynamicCharacterAction.performed += OnCharacterInput;
+                _dynamicCharacterAction.Enable();
             }
 
             _inputActionsInitialized = true;
@@ -192,6 +208,15 @@ namespace VoxelRPG.UI
                     Debug.Log("[UIManager] Found Crafting action dynamically.");
                 }
             }
+
+            if (_characterAction == null)
+            {
+                _dynamicCharacterAction = playerActionMap.FindAction("Character");
+                if (_dynamicCharacterAction != null)
+                {
+                    Debug.Log("[UIManager] Found Character action dynamically.");
+                }
+            }
         }
 
         private void OnDestroy()
@@ -214,6 +239,11 @@ namespace VoxelRPG.UI
                 _craftingAction.action.performed -= OnCraftingInput;
             }
 
+            if (_characterAction != null)
+            {
+                _characterAction.action.performed -= OnCharacterInput;
+            }
+
             // Cleanup dynamic action subscriptions
             if (_dynamicPauseAction != null)
             {
@@ -228,6 +258,11 @@ namespace VoxelRPG.UI
             if (_dynamicCraftingAction != null)
             {
                 _dynamicCraftingAction.performed -= OnCraftingInput;
+            }
+
+            if (_dynamicCharacterAction != null)
+            {
+                _dynamicCharacterAction.performed -= OnCharacterInput;
             }
         }
 
@@ -247,6 +282,7 @@ namespace VoxelRPG.UI
 
                 case UIScreenState.Inventory:
                 case UIScreenState.Crafting:
+                case UIScreenState.Character:
                     // ESC closes current screen
                     ReturnToGameplay();
                     break;
@@ -280,6 +316,21 @@ namespace VoxelRPG.UI
             else if (_currentState == UIScreenState.Gameplay)
             {
                 OpenCrafting();
+            }
+        }
+
+        private void OnCharacterInput(InputAction.CallbackContext context)
+        {
+            if (!_inputEnabled) return;
+            if (_currentState == UIScreenState.Paused) return;
+
+            if (_currentState == UIScreenState.Character)
+            {
+                ReturnToGameplay();
+            }
+            else if (_currentState == UIScreenState.Gameplay)
+            {
+                OpenCharacter();
             }
         }
 
@@ -334,6 +385,11 @@ namespace VoxelRPG.UI
                 _craftingScreen.SetActive(_currentState == UIScreenState.Crafting);
             }
 
+            if (_characterScreen != null)
+            {
+                _characterScreen.SetActive(_currentState == UIScreenState.Character);
+            }
+
             if (_deathScreen != null)
             {
                 _deathScreen.SetActive(_currentState == UIScreenState.Death);
@@ -378,6 +434,15 @@ namespace VoxelRPG.UI
         {
             _screenStack.Push(_currentState);
             SetState(UIScreenState.Inventory);
+        }
+
+        /// <summary>
+        /// Opens the character screen.
+        /// </summary>
+        public void OpenCharacter()
+        {
+            _screenStack.Push(_currentState);
+            SetState(UIScreenState.Character);
         }
 
         /// <summary>
@@ -496,6 +561,11 @@ namespace VoxelRPG.UI
         /// Crafting screen is open.
         /// </summary>
         Crafting,
+
+        /// <summary>
+        /// Character screen is open.
+        /// </summary>
+        Character,
 
         /// <summary>
         /// Player death screen.

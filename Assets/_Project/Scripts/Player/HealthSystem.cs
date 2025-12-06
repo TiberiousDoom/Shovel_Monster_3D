@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using VoxelRPG.Combat;
 using VoxelRPG.Core.Events;
+using VoxelRPG.Player.Skills;
 
 namespace VoxelRPG.Player
 {
@@ -30,9 +31,14 @@ namespace VoxelRPG.Player
         public float CurrentHealth => _currentHealth;
 
         /// <summary>
-        /// Maximum health points.
+        /// Maximum health points (including skill bonuses).
         /// </summary>
-        public float MaxHealth => _maxHealth;
+        public float MaxHealth => _maxHealth + SkillModifiers.GetBonusMaxHealth();
+
+        /// <summary>
+        /// Base maximum health without skill bonuses.
+        /// </summary>
+        public float BaseMaxHealth => _maxHealth;
 
         /// <summary>
         /// Whether the entity is alive.
@@ -83,11 +89,14 @@ namespace VoxelRPG.Player
                 return 0f;
             }
 
+            // Apply toughness damage reduction from skills
+            float reducedDamage = SkillModifiers.CalculateDamageTaken(damage);
+
             float healthBefore = _currentHealth;
-            float actualDamage = Mathf.Min(damage, _currentHealth);
+            float actualDamage = Mathf.Min(reducedDamage, _currentHealth);
             _currentHealth -= actualDamage;
 
-            Debug.Log($"[HealthSystem] TakeDamage: {healthBefore} - {actualDamage} = {_currentHealth} (source: {source?.name ?? "null"})");
+            Debug.Log($"[HealthSystem] TakeDamage: {healthBefore} - {actualDamage} = {_currentHealth} (raw: {damage}, reduced: {reducedDamage}, source: {source?.name ?? "null"})");
 
             RaiseHealthChanged();
 
@@ -108,7 +117,11 @@ namespace VoxelRPG.Player
         {
             if (!_isAlive || amount <= 0) return 0f;
 
-            float actualHeal = Mathf.Min(amount, _maxHealth - _currentHealth);
+            // Apply fortitude healing bonus from skills
+            float boostedHeal = SkillModifiers.CalculateHealing(amount);
+            float effectiveMax = MaxHealth; // Uses skill-boosted max health
+
+            float actualHeal = Mathf.Min(boostedHeal, effectiveMax - _currentHealth);
             _currentHealth += actualHeal;
 
             RaiseHealthChanged();
@@ -122,7 +135,7 @@ namespace VoxelRPG.Player
         /// <param name="health">Health value to set.</param>
         public void SetHealth(float health)
         {
-            _currentHealth = Mathf.Clamp(health, 0, _maxHealth);
+            _currentHealth = Mathf.Clamp(health, 0, MaxHealth);
             RaiseHealthChanged();
 
             if (_currentHealth <= 0 && _isAlive)
@@ -132,9 +145,10 @@ namespace VoxelRPG.Player
         }
 
         /// <summary>
-        /// Sets maximum health, optionally scaling current health.
+        /// Sets base maximum health, optionally scaling current health.
+        /// Note: Skill bonuses are applied on top of this base value.
         /// </summary>
-        /// <param name="maxHealth">New maximum health.</param>
+        /// <param name="maxHealth">New base maximum health.</param>
         /// <param name="scaleCurrentHealth">If true, current health scales proportionally.</param>
         public void SetMaxHealth(float maxHealth, bool scaleCurrentHealth = false)
         {
@@ -144,12 +158,12 @@ namespace VoxelRPG.Player
             {
                 float ratio = _currentHealth / _maxHealth;
                 _maxHealth = maxHealth;
-                _currentHealth = _maxHealth * ratio;
+                _currentHealth = MaxHealth * ratio; // Use effective max with skill bonuses
             }
             else
             {
                 _maxHealth = maxHealth;
-                _currentHealth = Mathf.Min(_currentHealth, _maxHealth);
+                _currentHealth = Mathf.Min(_currentHealth, MaxHealth);
             }
 
             RaiseHealthChanged();
@@ -162,7 +176,7 @@ namespace VoxelRPG.Player
         public void Revive(float healthPercent = 1f)
         {
             _isAlive = true;
-            _currentHealth = _maxHealth * Mathf.Clamp01(healthPercent);
+            _currentHealth = MaxHealth * Mathf.Clamp01(healthPercent);
             RaiseHealthChanged();
         }
 

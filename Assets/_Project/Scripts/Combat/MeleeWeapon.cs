@@ -1,5 +1,6 @@
 using UnityEngine;
 using VoxelRPG.Core.Items;
+using VoxelRPG.Player.Skills;
 
 namespace VoxelRPG.Combat
 {
@@ -207,6 +208,9 @@ namespace VoxelRPG.Combat
             _hitboxActive = true;
             if (_hitbox != null)
             {
+                // Apply strength skill bonus to damage multiplier
+                float strengthBonus = SkillModifiers.GetMeleeDamageBonus();
+                _hitbox.SetMultiplier(1f + strengthBonus);
                 _hitbox.Activate();
             }
         }

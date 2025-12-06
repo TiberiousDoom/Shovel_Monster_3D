@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using TMPro;
 using VoxelRPG.Core;
 using VoxelRPG.Player;
+using VoxelRPG.Player.Skills;
 
 namespace VoxelRPG.UI
 {
@@ -512,6 +513,7 @@ namespace VoxelRPG.UI
             SetPrivateField(uiManager, "_pauseScreen", _pauseScreen);
             SetPrivateField(uiManager, "_inventoryScreen", _inventoryScreen);
             SetPrivateField(uiManager, "_craftingScreen", _craftingScreen);
+            SetPrivateField(uiManager, "_characterScreen", _characterScreen);
             SetPrivateField(uiManager, "_deathScreen", _deathScreen);
         }
 
@@ -524,82 +526,183 @@ namespace VoxelRPG.UI
             var overlay = _characterScreen.AddComponent<Image>();
             overlay.color = new Color(0, 0, 0, 0.5f);
 
-            // Center panel
+            // Center panel - make it bigger to fit skills
             var panel = CreatePanel(_characterScreen.transform, "CharacterPanel",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(400, 350));
+                Vector2.zero, new Vector2(500, 600));
             panel.GetComponent<Image>().color = _panelColor;
-
-            var panelLayout = panel.AddComponent<VerticalLayoutGroup>();
-            panelLayout.spacing = 10;
-            panelLayout.padding = new RectOffset(20, 20, 20, 20);
-            panelLayout.childAlignment = TextAnchor.UpperCenter;
-            panelLayout.childControlWidth = true;
-            panelLayout.childControlHeight = false;
-            panelLayout.childForceExpandWidth = true;
-            panelLayout.childForceExpandHeight = false;
 
             // Title
             var title = CreateText(panel.transform, "Title", "CHARACTER",
                 TextAlignmentOptions.Center, 24);
-            title.gameObject.AddComponent<LayoutElement>().preferredHeight = 40;
+            title.rectTransform.anchorMin = new Vector2(0, 1);
+            title.rectTransform.anchorMax = new Vector2(1, 1);
+            title.rectTransform.pivot = new Vector2(0.5f, 1);
+            title.rectTransform.anchoredPosition = new Vector2(0, -10);
+            title.rectTransform.sizeDelta = new Vector2(0, 40);
 
-            // Stats content area
-            var statsContainer = new GameObject("StatsContainer");
-            statsContainer.transform.SetParent(panel.transform, false);
-            var statsRect = statsContainer.AddComponent<RectTransform>();
-            statsRect.anchorMin = Vector2.zero;
-            statsRect.anchorMax = Vector2.one;
-            var statsLayout = statsContainer.AddComponent<VerticalLayoutGroup>();
-            statsLayout.spacing = 8;
-            statsLayout.padding = new RectOffset(10, 10, 10, 10);
-            statsLayout.childControlWidth = true;
-            statsLayout.childControlHeight = false;
-            statsLayout.childForceExpandWidth = true;
-            statsLayout.childForceExpandHeight = false;
+            // Level and XP section
+            var levelContainer = new GameObject("LevelContainer");
+            levelContainer.transform.SetParent(panel.transform, false);
+            var levelRect = levelContainer.AddComponent<RectTransform>();
+            levelRect.anchorMin = new Vector2(0, 1);
+            levelRect.anchorMax = new Vector2(1, 1);
+            levelRect.pivot = new Vector2(0.5f, 1);
+            levelRect.anchoredPosition = new Vector2(0, -55);
+            levelRect.sizeDelta = new Vector2(-40, 60);
+            levelContainer.AddComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f, 1f);
 
-            // Health stat
-            var healthContainer = new GameObject("HealthStat");
-            healthContainer.transform.SetParent(statsContainer.transform, false);
-            healthContainer.AddComponent<LayoutElement>().preferredHeight = 30;
-            var healthLabel = CreateText(healthContainer.transform, "Label", "Health:",
-                TextAlignmentOptions.Left, 14);
-            healthLabel.rectTransform.anchorMin = Vector2.zero;
-            healthLabel.rectTransform.anchorMax = new Vector2(0.3f, 1);
-            var healthValue = CreateText(healthContainer.transform, "Value", "100/100",
-                TextAlignmentOptions.Right, 14);
-            healthValue.rectTransform.anchorMin = new Vector2(0.3f, 0);
-            healthValue.rectTransform.anchorMax = Vector2.one;
+            var levelText = CreateText(levelContainer.transform, "LevelText", "Level 1",
+                TextAlignmentOptions.Center, 20);
+            levelText.rectTransform.anchorMin = new Vector2(0, 0.5f);
+            levelText.rectTransform.anchorMax = new Vector2(1, 1);
+            levelText.rectTransform.offsetMin = new Vector2(10, 0);
+            levelText.rectTransform.offsetMax = new Vector2(-10, -5);
 
-            // Hunger stat
-            var hungerContainer = new GameObject("HungerStat");
-            hungerContainer.transform.SetParent(statsContainer.transform, false);
-            hungerContainer.AddComponent<LayoutElement>().preferredHeight = 30;
-            var hungerLabel = CreateText(hungerContainer.transform, "Label", "Hunger:",
-                TextAlignmentOptions.Left, 14);
-            hungerLabel.rectTransform.anchorMin = Vector2.zero;
-            hungerLabel.rectTransform.anchorMax = new Vector2(0.3f, 1);
-            var hungerValue = CreateText(hungerContainer.transform, "Value", "100/100",
-                TextAlignmentOptions.Right, 14);
-            hungerValue.rectTransform.anchorMin = new Vector2(0.3f, 0);
-            hungerValue.rectTransform.anchorMax = Vector2.one;
+            // XP bar
+            var xpBarContainer = CreatePanel(levelContainer.transform, "XPBarContainer",
+                new Vector2(0, 0), new Vector2(1, 0.5f),
+                new Vector2(10, 5), new Vector2(-20, -10));
+            var xpSlider = CreateSlider(xpBarContainer.transform, "XPSlider", new Color(0.3f, 0.5f, 0.9f));
+            xpSlider.value = 0.5f;
 
-            // Inventory count stat
-            var inventoryContainer = new GameObject("InventoryStat");
-            inventoryContainer.transform.SetParent(statsContainer.transform, false);
-            inventoryContainer.AddComponent<LayoutElement>().preferredHeight = 30;
-            var inventoryLabel = CreateText(inventoryContainer.transform, "Label", "Inventory:",
-                TextAlignmentOptions.Left, 14);
-            inventoryLabel.rectTransform.anchorMin = Vector2.zero;
-            inventoryLabel.rectTransform.anchorMax = new Vector2(0.3f, 1);
-            var inventoryValue = CreateText(inventoryContainer.transform, "Value", "0/28",
-                TextAlignmentOptions.Right, 14);
-            inventoryValue.rectTransform.anchorMin = new Vector2(0.3f, 0);
-            inventoryValue.rectTransform.anchorMax = Vector2.one;
+            var xpText = CreateText(xpBarContainer.transform, "XPText", "50 / 100 XP",
+                TextAlignmentOptions.Center, 12);
+            xpText.rectTransform.anchorMin = Vector2.zero;
+            xpText.rectTransform.anchorMax = Vector2.one;
+            xpText.rectTransform.offsetMin = Vector2.zero;
+            xpText.rectTransform.offsetMax = Vector2.zero;
+
+            // Skill points
+            var skillPointsText = CreateText(panel.transform, "SkillPointsText", "Skill Points: 0",
+                TextAlignmentOptions.Center, 16);
+            skillPointsText.rectTransform.anchorMin = new Vector2(0, 1);
+            skillPointsText.rectTransform.anchorMax = new Vector2(1, 1);
+            skillPointsText.rectTransform.pivot = new Vector2(0.5f, 1);
+            skillPointsText.rectTransform.anchoredPosition = new Vector2(0, -120);
+            skillPointsText.rectTransform.sizeDelta = new Vector2(0, 25);
+            skillPointsText.color = new Color(0.8f, 0.8f, 0.2f);
+
+            // Scroll view for skills
+            var scrollContainer = new GameObject("SkillsScrollView");
+            scrollContainer.transform.SetParent(panel.transform, false);
+            var scrollRect = scrollContainer.AddComponent<ScrollRect>();
+            var scrollContainerRect = scrollContainer.GetComponent<RectTransform>();
+            scrollContainerRect.anchorMin = new Vector2(0, 0);
+            scrollContainerRect.anchorMax = new Vector2(1, 1);
+            scrollContainerRect.offsetMin = new Vector2(20, 60);
+            scrollContainerRect.offsetMax = new Vector2(-20, -150);
+
+            var viewport = new GameObject("Viewport");
+            viewport.transform.SetParent(scrollContainer.transform, false);
+            var viewportRect = viewport.AddComponent<RectTransform>();
+            viewportRect.anchorMin = Vector2.zero;
+            viewportRect.anchorMax = Vector2.one;
+            viewportRect.offsetMin = Vector2.zero;
+            viewportRect.offsetMax = Vector2.zero;
+            viewport.AddComponent<RectMask2D>();
+
+            var content = new GameObject("Content");
+            content.transform.SetParent(viewport.transform, false);
+            var contentRect = content.AddComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0, 1);
+            contentRect.anchorMax = new Vector2(1, 1);
+            contentRect.pivot = new Vector2(0.5f, 1);
+            contentRect.anchoredPosition = Vector2.zero;
+            contentRect.sizeDelta = new Vector2(0, 0);
+            var contentLayout = content.AddComponent<VerticalLayoutGroup>();
+            contentLayout.spacing = 10;
+            contentLayout.padding = new RectOffset(5, 5, 5, 5);
+            contentLayout.childControlWidth = true;
+            contentLayout.childControlHeight = false;
+            contentLayout.childForceExpandWidth = true;
+            contentLayout.childForceExpandHeight = false;
+            var contentFitter = content.AddComponent<ContentSizeFitter>();
+            contentFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            scrollRect.content = contentRect;
+            scrollRect.viewport = viewportRect;
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+
+            // Combat skills section
+            var combatSection = CreateSkillSection(content.transform, "COMBAT");
+
+            // Gathering skills section
+            var gatheringSection = CreateSkillSection(content.transform, "GATHERING");
+
+            // Survival skills section
+            var survivalSection = CreateSkillSection(content.transform, "SURVIVAL");
 
             // Close button
             var closeBtn = CreateButton(panel.transform, "CloseButton", "Close", 40);
-            closeBtn.gameObject.AddComponent<LayoutElement>().preferredHeight = 40;
+            closeBtn.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 0);
+            closeBtn.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 0);
+            closeBtn.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0);
+            closeBtn.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 10);
+            closeBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(150, 40);
+
+            // Wire close button to UIManager
+            closeBtn.onClick.AddListener(() =>
+            {
+                if (ServiceLocator.TryGet<UIManager>(out var uiManager))
+                {
+                    uiManager.ReturnToGameplay();
+                }
+            });
+
+            // Add SkillsUI component
+            var skillsUI = _characterScreen.AddComponent<SkillsUI>();
+            SetPrivateField(skillsUI, "_levelText", levelText);
+            SetPrivateField(skillsUI, "_xpSlider", xpSlider);
+            SetPrivateField(skillsUI, "_xpText", xpText);
+            SetPrivateField(skillsUI, "_skillPointsText", skillPointsText);
+            SetPrivateField(skillsUI, "_combatSkillsContainer", combatSection);
+            SetPrivateField(skillsUI, "_gatheringSkillsContainer", gatheringSection);
+            SetPrivateField(skillsUI, "_survivalSkillsContainer", survivalSection);
+        }
+
+        private Transform CreateSkillSection(Transform parent, string sectionName)
+        {
+            var section = new GameObject(sectionName + "Section");
+            section.transform.SetParent(parent, false);
+            var sectionLayout = section.AddComponent<LayoutElement>();
+            sectionLayout.flexibleWidth = 1;
+
+            var sectionVertical = section.AddComponent<VerticalLayoutGroup>();
+            sectionVertical.spacing = 4;
+            sectionVertical.childControlWidth = true;
+            sectionVertical.childControlHeight = false;
+            sectionVertical.childForceExpandWidth = true;
+            sectionVertical.childForceExpandHeight = false;
+
+            // Section header
+            var header = new GameObject("Header");
+            header.transform.SetParent(section.transform, false);
+            header.AddComponent<LayoutElement>().preferredHeight = 25;
+            var headerBg = header.AddComponent<Image>();
+            headerBg.color = new Color(0.25f, 0.25f, 0.25f, 1f);
+
+            var headerText = CreateText(header.transform, "HeaderText", sectionName,
+                TextAlignmentOptions.Left, 14);
+            headerText.rectTransform.anchorMin = Vector2.zero;
+            headerText.rectTransform.anchorMax = Vector2.one;
+            headerText.rectTransform.offsetMin = new Vector2(10, 0);
+            headerText.rectTransform.offsetMax = Vector2.zero;
+            headerText.fontStyle = FontStyles.Bold;
+
+            // Skills container
+            var container = new GameObject("SkillsContainer");
+            container.transform.SetParent(section.transform, false);
+            var containerLayout = container.AddComponent<VerticalLayoutGroup>();
+            containerLayout.spacing = 2;
+            containerLayout.childControlWidth = true;
+            containerLayout.childControlHeight = false;
+            containerLayout.childForceExpandWidth = true;
+            containerLayout.childForceExpandHeight = false;
+
+            return container.transform;
         }
 
         #region Helper Methods
